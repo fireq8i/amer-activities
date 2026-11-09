@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl" data-scheme="light">
 <head>
+<script>try{if(localStorage.getItem('amer-theme')==='dark')document.documentElement.setAttribute('data-scheme','dark')}catch(e){}</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>الأنشطة المدرسية</title>
@@ -508,7 +509,8 @@ const ADM_KEY = 'amer-admin-token';
 const ui = { view: 'loading', activityId: null, error: '', adminError: '', admin: false, setupOk: false, setupToken: '', lastCivil: '',
   adminBusy: false, busy: false, newInvite: null, confirmDel: null, inviteCode: '', modal: false, toast: null,
   openPanels: new Set(), move: null, moveTarget: null, search: '', preview: false, accounts: [] };
-let theme = 'light';
+const THEME_KEY = 'amer-theme';
+let theme = (() => { try { return localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light'; } catch (e) { return 'light'; } })();
 let toastTimer;
 const maskCivil = v => { const d = String(v || '').replace(/\D/g, ''); return d ? '•••••••••' + d.slice(-3) : ''; };
 const me = { token: null, name: '', cls: '', civilMask: '', activityId: null };          // الطالب
@@ -1508,6 +1510,7 @@ document.addEventListener('click', e => {
     case 'exitPreview': exitPreview(); break;
     case 'theme':
       theme = theme === 'dark' ? 'light' : 'dark';
+      try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
       break;
     default: return;
   }
