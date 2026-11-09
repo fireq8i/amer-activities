@@ -514,7 +514,7 @@ const maskCivil = v => { const d = String(v || '').replace(/\D/g, ''); return d 
 const me = { token: null, name: '', cls: '', civilMask: '', activityId: null };          // الطالب
 const adm = { token: null, name: '', role: '', civilId: '' };                             // الإدارة
 let counts = null;                                                                        // id -> عدد المسجلين
-const adminData = { regs: {}, students: {} };                                             // للوحة الإدارة
+const adminData = { regs: {}, students: {}, total: null };                                             // للوحة الإدارة
 // يُحفظ الدخول في مكانين (التخزين المحلي + ملف تعريف الارتباط) حتى لا يضيع إلا بتسجيل الخروج
 const ck = {
   get: k => { try { const m = document.cookie.match(new RegExp('(?:^|; )' + k + '=([^;]*)')); return m ? decodeURIComponent(m[1]) : null; } catch (e) { return null; } },
@@ -779,6 +779,7 @@ async function refreshOverview(patch) {
     for (const s of a.students) { regs[s.civil_id] = a.id; studs[s.civil_id] = { civilId: s.civil_id, name: s.name, cls: s.cls }; }
   }
   adminData.regs = regs; adminData.students = studs; counts = c;
+  if (typeof r.total_students === 'number') adminData.total = r.total_students;
   if (patch) patchAdminCounts();
 }
 function patchAdminCounts() {
@@ -1112,7 +1113,9 @@ function adminStats() {
   const total = Object.keys(allRegs()).length;
   const free = ACTIVITIES.reduce((n, a) => n + seatsLeft(a), 0);
   const fullCount = ACTIVITIES.filter(a => seatsLeft(a) === 0).length;
+  const notReg = adminData.total == null ? '—' : Math.max(0, adminData.total - total);
   return `<div class="stat"><span>الطلبة المسجلون</span><b>${total}</b></div>
+      <div class="stat"><span>الطلبة غير المسجلين</span><b>${notReg}${adminData.total == null ? '' : ` <small class="faint">من ${adminData.total}</small>`}</b></div>
       <div class="stat"><span>الأنشطة المكتملة</span><b>${fullCount} <small class="faint">من ${ACTIVITIES.length}</small></b></div>
       <div class="stat"><span>المقاعد المتبقية إجمالاً</span><b>${free}</b></div>`;
 }
