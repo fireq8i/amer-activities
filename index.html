@@ -862,7 +862,7 @@ function header() {
   } else if (me.token || ui.preview) {
     nav = `<nav class="nav" aria-label="التنقل">
       <button data-act="go" data-id="home" ${cur('home')}>الأنشطة</button>
-      <button data-act="go" data-id="rules" ${cur('rules')}>القوانين والتعليمات</button>
+      <button data-act="go" data-id="rules" ${cur('rules')}>معلومات عن النشاط</button>
       <button data-act="logout">تسجيل الخروج</button></nav>`;
   }
   const dark = theme === 'dark';
@@ -988,7 +988,7 @@ function viewActivity() {
           <div class="fact"><span>المقاعد المتبقية</span><b data-left="${a.id}">${st.left}</b></div>
           <div class="fact"><span>السعة الكلية</span><b>${a.capacity}</b></div>
         </div>
-        <h3>قوانين النشاط</h3>
+        <h3>معلومات عن النشاط</h3>
         <ol class="act-rules">${rulesFor(a.id).map(r => `<li>${esc(r)}</li>`).join('')}</ol>
         <div style="display:grid;margin-top:6px" data-action="${a.id}">${st.action}</div>
       </div>
@@ -996,10 +996,10 @@ function viewActivity() {
 }
 
 function viewRules() {
-  return `<div class="page-head"><div><div class="eyebrow">قبل التسجيل</div><h1>القوانين والتعليمات</h1></div></div>
+  return `<div class="page-head"><div><div class="eyebrow">قبل التسجيل</div><h1>معلومات عن النشاط</h1></div></div>
     ${RULES.length
       ? `<div class="rules">${RULES.map(r => `<div class="rule"><div><p>${esc(r)}</p></div></div>`).join('')}</div>`
-      : '<div class="panel"><div class="empty">ستُنشر القوانين والتعليمات المعتمدة من إدارة المدرسة في هذه الصفحة.</div></div>'}`;
+      : '<div class="panel"><div class="empty">ستُنشر معلومات النشاط المعتمدة من إدارة المدرسة في هذه الصفحة.</div></div>'}`;
 }
 
 function adminArt(title) {
