@@ -301,6 +301,12 @@ td.num{width:64px;color:var(--ink-3)}
 .panel[open] .caret{transform:rotate(-45deg)}
 .export-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 20px;border-bottom:1px solid var(--line)}
 .btn-sm{padding:6px 14px;font-size:13.5px}
+.reg-lock{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:16px 20px;margin-bottom:14px;border:1px solid var(--line);border-radius:16px;background:var(--surface)}
+.reg-lock.is-locked{border-color:var(--bad)}
+.reg-lock h3{font-size:16px;font-weight:700;margin:0 0 4px;display:flex;align-items:center;gap:8px}
+.reg-lock p{margin:0;font-size:13.5px}
+.lock-banner{display:grid;gap:4px;padding:14px 18px;margin:0 0 16px;border-radius:14px;border:1px solid var(--bad);background:var(--bad-soft);color:var(--ink)}
+.lock-banner b{font-size:16px}
 .export-all{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:16px 20px;margin-bottom:14px;border:1px solid var(--line);border-radius:16px;background:var(--brand-soft)}
 .export-all h3{font-size:16px;font-weight:700;margin:0 0 4px}
 .export-all p{margin:0;font-size:13.5px}
@@ -516,7 +522,9 @@ const maskCivil = v => { const d = String(v || '').replace(/\D/g, ''); return d 
 const me = { token: null, name: '', cls: '', civilMask: '', activityId: null };          // الطالب
 const adm = { token: null, name: '', role: '', civilId: '' };                             // الإدارة
 let counts = null;                                                                        // id -> عدد المسجلين
-const adminData = { regs: {}, students: {}, total: null };                                             // للوحة الإدارة
+const adminData = { regs: {}, students: {}, total: null };
+let regOpen = true; // يحدّده الخادم: إيقاف التسجيل العام من الإدارة
+const applyRegOpen = r => { if (r && typeof r.reg_open === 'boolean' && r.reg_open !== regOpen) { regOpen = r.reg_open; if (!regOpen) ui.modal = false; return true; } return false; };                                             // للوحة الإدارة
 // يُحفظ الدخول في مكانين (التخزين المحلي + ملف تعريف الارتباط) حتى لا يضيع إلا بتسجيل الخروج
 const ck = {
   get: k => { try { const m = document.cookie.match(new RegExp('(?:^|; )' + k + '=([^;]*)')); return m ? decodeURIComponent(m[1]) : null; } catch (e) { return null; } },
@@ -604,10 +612,11 @@ async function pollOnce() {
   try {
     if (adminView) {
       if (Date.now() - lastOverview > 5500 && !ui.move) await refreshOverview(true);
-      else { const r = await api('poll', {}, 8000); if (r && applyCounts(r.counts)) patchAdminCounts(); }
+      else { const r = await api('poll', {}, 8000); if (r && (applyRegOpen(r) | applyCounts(r.counts))) patchAdminCounts(); }
     } else {
       const r = await api('poll', { p_token: ui.preview ? null : me.token }, 8000);
       if (!r) return;
+      if (applyRegOpen(r)) { applyCounts(r.counts); render(); return; }
       const changed = applyCounts(r.counts);
       if (!ui.preview && me.token) {
         if (!r.session) { studentExpired(); return; }
@@ -652,7 +661,7 @@ async function studentLogin(civil) {
   }
   Object.assign(me, { token: r.token, name: r.name, cls: r.cls, civilMask: maskCivil(civil), activityId: r.activity_id || null });
   store.set(STU_KEY, JSON.stringify({ token: r.token, mask: me.civilMask }));
-  try { const p = await api('poll', { p_token: me.token }); applyCounts(p.counts); } catch (e) {}
+  try { const p = await api('poll', { p_token: me.token }); applyRegOpen(p); applyCounts(p.counts); } catch (e) {}
   ui.view = 'home'; ui.error = '';
   return '';
 }
@@ -679,6 +688,7 @@ async function register(id) {
     if (code === 'full') toast('error', 'عذراً، اكتملت مقاعد «' + a.name + '». سبقك طالب آخر إلى آخر مقعد.');
     else if (code === 'already') toast('error', 'أنت مسجّل في نشاط بالفعل.');
     else if (code === 'closed') toast('error', 'التسجيل في هذا النشاط مغلق حالياً.');
+    else if (code === 'locked') { regOpen = false; toast('error', 'أوقفت إدارة المدرسة التسجيل حالياً.'); }
     else toast('error', 'تعذّر التسجيل. حاول مرة أخرى.');
   }
   await pollOnceForce();
@@ -699,13 +709,14 @@ async function cancelReg() {
     if (counts) counts[a.id] = Math.max(0, (counts[a.id] || 1) - 1);
     toast('info', 'أُلغي تسجيلك في «' + a.name + '»، وأصبح مقعدك متاحاً.');
   } else if (r && r.code === 'session') return studentExpired();
+  else if (r && r.code === 'locked') { regOpen = false; toast('error', 'أوقفت إدارة المدرسة التسجيل حالياً، فلا يمكن إلغاء التسجيل أو تغيير النشاط.'); }
   await pollOnceForce();
   render();
 }
 async function pollOnceForce() {
   try {
     const r = await api('poll', { p_token: ui.preview ? null : me.token }, 8000);
-    if (r) { applyCounts(r.counts); if (!ui.preview && me.token && r.session) me.activityId = r.activity_id || null; }
+    if (r) { applyRegOpen(r); applyCounts(r.counts); if (!ui.preview && me.token && r.session) me.activityId = r.activity_id || null; }
   } catch (e) {}
 }
 function studentLogout() {
@@ -782,6 +793,7 @@ async function refreshOverview(patch) {
   }
   adminData.regs = regs; adminData.students = studs; counts = c;
   if (typeof r.total_students === 'number') adminData.total = r.total_students;
+  applyRegOpen(r);
   if (patch) patchAdminCounts();
 }
 function patchAdminCounts() {
@@ -790,6 +802,7 @@ function patchAdminCounts() {
   if (s) s.innerHTML = adminStats();
   if (p) p.innerHTML = adminPanels();
   const e = document.getElementById('exportAll'); if (e) e.innerHTML = exportAllBar();
+  const g = document.getElementById('regLock'); if (g) g.innerHTML = regLockBar();
   if (r && ui.search.trim().length >= 2) r.innerHTML = searchResults();
 }
 async function loadAccounts() {
@@ -925,16 +938,17 @@ function viewHome() {
     ? `<section class="status" aria-label="نشاطك الحالي">
         <div class="status-thumb">${art(mine)}</div>
         <div><span class="chip chip-mine">نشاطك الحالي</span><h2>${esc(mine.name)}</h2><p class="faint">تسجيلك محفوظ ويظهر لك في كل مرة تدخل فيها.</p></div>
-        <button class="btn btn-outline-danger" data-act="askCancel" ${ui.busy ? 'disabled' : ''}>إلغاء التسجيل أو تغيير النشاط</button>
+        ${regOpen ? `<button class="btn btn-outline-danger" data-act="askCancel" ${ui.busy ? 'disabled' : ''}>إلغاء التسجيل أو تغيير النشاط</button>` : ''}
       </section>`
     : `<section class="status" aria-label="حالة التسجيل">
         <div class="status-empty">${ICON.plus}</div>
-        <div><h2>لم تسجّل في أي نشاط بعد</h2><p class="faint">يمكنك اختيار نشاط واحد فقط من الأنشطة أدناه.</p></div>
+        <div><h2>لم تسجّل في أي نشاط بعد</h2><p class="faint">${regOpen ? 'يمكنك اختيار نشاط واحد فقط من الأنشطة أدناه.' : 'التسجيل متوقف حالياً، ولا يمكن التسجيل في أي نشاط.'}</p></div>
       </section>`;
   return `<div class="page-head">
       <div><div class="eyebrow">مرحباً بك</div><h1>${esc(s.name)}</h1>
       <p class="faint">الصف: <span class="ltr">${esc(s.cls)}</span>${s.mask ? ` · الرقم المدني: <span class="ltr">${esc(s.mask)}</span>` : ''}</p></div>
     </div>
+    ${regOpen ? '' : `<div class="lock-banner" role="status"><b>التسجيل متوقف حالياً</b><span>أوقفت إدارة المدرسة التسجيل وتغيير الأنشطة مؤقتاً. ${mine ? 'نشاطك الحالي محفوظ كما هو.' : ''}</span></div>`}
     ${status}
     <div class="section-head"><h2>الأنشطة المتاحة</h2><span class="faint live"><span class="live-dot"></span>تتحدث المقاعد تلقائياً</span></div>
     <div class="grid">${ACTIVITIES.map(card).join('')}</div>`;
@@ -945,7 +959,11 @@ function state(a) {
   let chip, action;
   if (isMine) {
     chip = '<span class="chip chip-mine">مسجّل فيه</span>';
-    action = `<button class="btn btn-outline-danger" data-act="askCancel" ${ui.busy ? 'disabled' : ''}>إلغاء التسجيل</button>`;
+    action = !regOpen ? '<button class="btn btn-quiet" disabled>التسجيل متوقف</button>'
+      : `<button class="btn btn-outline-danger" data-act="askCancel" ${ui.busy ? 'disabled' : ''}>إلغاء التسجيل</button>`;
+  } else if (!regOpen) {
+    chip = !a.open ? '<span class="chip chip-full">مغلق</span>' : left <= 0 ? '<span class="chip chip-full">مكتمل</span>' : '<span class="chip chip-open">متاح</span>';
+    action = '<button class="btn btn-quiet" disabled>التسجيل متوقف</button>';
   } else {
     chip = !a.open ? '<span class="chip chip-full">مغلق</span>' : left <= 0 ? '<span class="chip chip-full">مكتمل</span>' : '<span class="chip chip-open">متاح</span>';
     if (ui.busy === a.id) action = '<button class="btn btn-primary" disabled>جارٍ التسجيل…</button>';
@@ -1157,8 +1175,28 @@ function viewAdmin() {
       <input id="adminSearch" class="input" type="search" autocomplete="off" placeholder="ابحث باسم الطالب أو رقمه المدني" value="${esc(ui.search)}">
       <div id="searchResults">${searchResults()}</div>
     </section>
+    <div id="regLock">${regLockBar()}</div>
     <div id="exportAll">${exportAllBar()}</div>
     <div class="panels" id="adminPanels">${adminPanels()}</div>`;
+}
+function regLockBar() {
+  return `<section class="reg-lock ${regOpen ? 'is-open' : 'is-locked'}">
+      <div><h3>حالة التسجيل: ${regOpen ? '<span class="chip chip-open">مفتوح</span>' : '<span class="chip chip-full">متوقف</span>'}</h3>
+      <p class="faint">${regOpen ? 'يستطيع الطلبة الآن التسجيل وإلغاء التسجيل وتغيير النشاط.' : 'لا يستطيع أي طالب الآن التسجيل أو إلغاء تسجيله أو تغيير نشاطه، ويرى كل طالب نشاطه الحالي فقط.'}</p></div>
+      <button class="btn ${regOpen ? 'btn-outline-danger' : 'btn-primary'}" data-act="toggleReg" ${ui.regBusy ? 'disabled' : ''}>${ui.regBusy ? 'جارٍ التنفيذ…' : regOpen ? 'إيقاف التسجيل' : 'فتح التسجيل'}</button>
+    </section>`;
+}
+async function toggleRegistration() {
+  if (ui.regBusy || !adm.token) return;
+  const want = !regOpen;
+  ui.regBusy = true; patchAdminCounts();
+  let r;
+  try { r = await api('admin_set_registration', { p_token: adm.token, p_open: want }); } catch (e) {}
+  ui.regBusy = false;
+  if (r && r.ok) { regOpen = r.reg_open; toast(regOpen ? 'success' : 'info', regOpen ? 'فُتح التسجيل لجميع الطلبة.' : 'أُوقف التسجيل لجميع الطلبة.'); }
+  else if (r && r.code === 'session') { adminExpired(); return render(); }
+  else toast('error', 'تعذّر تغيير حالة التسجيل. حاول مرة أخرى.');
+  patchAdminCounts();
 }
 function exportAllBar() {
   const n = ACTIVITIES.filter(a => roster(a).length).length;
@@ -1493,7 +1531,8 @@ document.addEventListener('click', e => {
       try { navigator.clipboard.writeText(id).then(done, () => { el.textContent = 'تعذّر النسخ'; }); } catch (err) { el.textContent = 'تعذّر النسخ'; }
       return;
     }
-    case 'askCancel': if (myAct()) ui.modal = true; break;
+    case 'askCancel': if (myAct() && regOpen) ui.modal = true; break;
+    case 'toggleReg': toggleRegistration(); return;
     case 'confirmCancel': cancelReg(); return;
     case 'closeModal': ui.modal = false; break;
     case 'openMove': ui.move = id; ui.moveTarget = null; break;
@@ -1608,7 +1647,7 @@ window.addEventListener('hashchange', async () => { if (routeInvite() || await r
   if (routeInvite() && !ui.admin) { /* صفحة التفعيل */ }
   else if (await routeSetup()) { /* إعداد مدير النظام */ }
   else if (ui.admin) { ui.view = 'admin'; await refreshOverview().catch(() => {}); }
-  else if (me.token) ui.view = 'home';
+  else if (me.token) { ui.view = 'home'; await pollOnceForce(); }
   else ui.view = 'login';
   render();
 })();
