@@ -1124,6 +1124,45 @@ nav.crumb { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-
 .hw-t { font-size: 1rem; margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px; }
 .hw-t small { font-size: .8rem; font-weight: 400; color: var(--muted); }
 .hw-card .ok-t { color: var(--ok); } .hw-card .warn-t { color: var(--warn); } .hw-card .bad-t { color: var(--bad); } .hw-card .none-t { color: var(--muted); }
+.hw-go { cursor: pointer; transition: box-shadow .12s, border-color .12s; }
+.hw-go:hover { border-color: var(--navy); box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+.hw-go:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.hw-open { font-size: .78rem; font-weight: 600; color: var(--navy); white-space: nowrap; }
+/* الجدول الداخلي */
+.itt { display: flex; flex-direction: column; gap: 10px; --g6: light-dark(#c6e0f2, #27475e); --g7: light-dark(#bfe3d2, #24503d); --g8: light-dark(#ffe4aa, #5a4a1e); --g9: light-dark(#ddcbed, #463761); --g0: var(--surface-2); }
+.itt .tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.itt .tabs button { border: 0; border-bottom: 3px solid transparent; background: none; padding: 8px 12px; font: inherit; color: var(--ink); cursor: pointer; white-space: nowrap; min-height: 44px; }
+.itt .tabs button[aria-selected="true"] { border-bottom-color: var(--navy); font-weight: 700; }
+.itt-rows { display: grid; gap: 8px; }
+.itt-row { display: grid; grid-template-columns: minmax(130px, 210px) minmax(0, 1fr); gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; background: var(--surface); }
+.itt-row.trainee { border-style: dashed; }
+.itt-who b { display: block; font-size: .95rem; line-height: 1.3; } .itt-who small { color: var(--muted); font-size: .8rem; }
+.itt-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.itt-chip { min-height: 50px; min-width: 74px; padding: 4px 10px; border-radius: 10px; border: 2px solid transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: grab; touch-action: none; position: relative; color: var(--ink); -webkit-user-select: none; user-select: none; }
+.itt-chip b { font-size: 1.05rem; direction: ltr; } .itt-chip small { font-size: .72rem; opacity: .8; white-space: nowrap; }
+.itt-chip.g6 { background: var(--g6); } .itt-chip.g7 { background: var(--g7); } .itt-chip.g8 { background: var(--g8); } .itt-chip.g9 { background: var(--g9); } .itt-chip.g0 { background: var(--g0); }
+.itt-chip.mine::after { content: ""; position: absolute; top: 5px; inset-inline-start: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--navy); }
+.itt-chip.sel { border-color: var(--navy); box-shadow: 0 0 0 3px color-mix(in srgb, var(--navy) 30%, transparent); }
+.itt-chip.swap { border-style: dashed; border-color: var(--navy); cursor: pointer; } .itt-chip.noswap { opacity: .45; }
+.itt-chip:focus-visible, .itt-slot:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.itt-slot { min-height: 50px; min-width: 74px; border-radius: 10px; border: 2px dashed var(--navy); color: var(--navy); display: flex; align-items: center; justify-content: center; font-size: .8rem; cursor: pointer; background: color-mix(in srgb, var(--navy) 7%, transparent); padding: 0 8px; text-align: center; }
+.itt-slot.no { border-color: var(--bad); color: var(--bad); background: none; cursor: not-allowed; font-size: .75rem; max-width: 170px; }
+.itt-slot.over { background: color-mix(in srgb, var(--navy) 22%, transparent); }
+.itt-ghost { position: fixed; pointer-events: none; z-index: 60; transform: translate(50%, -50%) scale(1.08); box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+.itt-wk-w { overflow-x: auto; }
+.itt-wk { min-width: 900px; font-size: .78rem; }
+.itt-wk th, .itt-wk td { border: 1px solid var(--line); padding: 3px 2px; text-align: center; min-width: 32px; }
+.itt-wk th.n { text-align: start; padding: 4px 8px; min-width: 150px; position: sticky; inset-inline-start: 0; background: var(--surface); z-index: 1; }
+.itt-wk .ds { border-inline-start: 3px solid var(--ink); }
+.itt-wk td.cm { background: repeating-linear-gradient(45deg, var(--line) 0 4px, transparent 4px 8px); color: var(--muted); }
+.itt-wk td.clash { outline: 2px solid var(--bad); outline-offset: -2px; }
+.itt-c { display: block; border-radius: 5px; padding: 2px 0; direction: ltr; font-weight: 700; }
+.itt-c.g6 { background: var(--g6); } .itt-c.g7 { background: var(--g7); } .itt-c.g8 { background: var(--g8); } .itt-c.g9 { background: var(--g9); }
+.itt-chg { list-style: none; margin: 6px 0; padding: 0; display: grid; gap: 6px; }
+.itt-chg li { border-inline-start: 4px solid var(--line); padding: 4px 10px; }
+.itt-chg li.t { border-color: var(--navy); } .itt-chg li.a { border-color: var(--warn); }
+.itt-add summary { cursor: pointer; }
+@media (max-width: 600px) { .itt-row { grid-template-columns: 1fr; } }
 .hw-cnt { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; text-align: center; }
 .hw-cnt div { border: 1px solid var(--line); border-radius: 10px; padding: 6px 2px; display: flex; flex-direction: column; }
 .hw-cnt b { font-size: 1.25rem; line-height: 1.2; } .hw-cnt span { font-size: .8rem; color: var(--muted); }
@@ -1131,10 +1170,18 @@ nav.crumb { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-
 .hw-list li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 0; border-top: 1px solid var(--line); flex-wrap: wrap; }
 .hw-list li:first-child { border-top: 0; }
 .hw-st { font-size: .9rem; white-space: nowrap; } .hw-st.ok { color: var(--ok); } .hw-st.warn { color: var(--warn); } .hw-st.bad { color: var(--bad); } .hw-st.none { color: var(--muted); }
-.hw-dd-w { overflow-x: auto; }
-.hw-dd th, .hw-dd td { text-align: center; padding: 5px 2px; white-space: nowrap; }
-.hw-dd tbody th { text-align: start; font-weight: 600; }
-.hw-cl { display: inline-block; font-size: .78rem; font-weight: 600; border-radius: 6px; padding: 2px 4px; font-variant-numeric: tabular-nums; }
+.hw-dd-w { overflow-x: visible; }
+.hw-dd { width: 100%; table-layout: fixed; border-collapse: collapse; }
+.hw-dd col.hw-dd-n { width: 33%; }
+.hw-dd th, .hw-dd td { text-align: center; padding: 4px 1px; white-space: nowrap; border-inline-start: 1px solid var(--line); font-size: .8rem; }
+.hw-dd thead th { font-weight: 700; color: var(--ink); background: var(--surface-2); }
+.hw-dd tbody th { text-align: start; font-weight: 600; overflow: hidden; text-overflow: ellipsis; padding-inline: 4px 2px; border-inline-start: 0; font-size: .74rem; }
+.hw-dd td { overflow: hidden; }
+.hw-cl.plain { font-weight: 400; font-size: .66rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+.hw-dd thead th:first-child { border-inline-start: 0; text-align: start; padding-inline: 4px 2px; }
+.hw-dd tbody tr:nth-child(even) td, .hw-dd tbody tr:nth-child(even) th { background: color-mix(in srgb, var(--line) 25%, transparent); }
+.hw-cl { display: inline-block; font-size: .72rem; font-weight: 700; border-radius: 5px; padding: 2px 1px; min-width: 2.4em; font-variant-numeric: tabular-nums; }
+@media (min-width: 560px) { .hw-dd th, .hw-dd td { font-size: .88rem; padding: 5px 2px; } .hw-cl { font-size: .8rem; padding: 2px 4px; } }
 .hw-cl.ok { background: var(--ok-tint); color: var(--ok); } .hw-cl.warn { background: var(--warn-tint); color: var(--warn); } .hw-cl.bad { background: var(--bad-tint); color: var(--bad); }
 .hw-cl.none { background: color-mix(in srgb, var(--muted) 14%, transparent); color: var(--muted); } .hw-cl.plain { color: var(--muted); }
 .hw-lg { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -4451,8 +4498,8 @@ ${buildLogReport(rep)}
   /* الشريط يظهر حسب هوية الجلسة الحقيقية (S.real) لا حسب الدور المعروض، ويبقى في كل الصفحات. المحتوى نفسه تبنيه
      الصفحات والصلاحيات الفعلية للحساب المعروض (S.me من الخادم)، ولا توجد واجهة معاينة منفصلة. الخادم يرفض أي طلب
      معاينة من غير جلسة مدير النظام، وينفّذ طلبات المعاينة على نسخة مؤقتة لا تُحفظ. */
-  const PV_ROLES = [['admin', 'مدير النظام'], ['school', 'الإدارة'], ['head', 'رئيس القسم'], ['teacher', 'المعلم']];
-  const PV_KIND = { principal: 'مدير المدرسة', assistant: 'مساعد المدير', head: 'رئيس القسم', deputy: 'نائب رئيس القسم', teacher: 'معلم' };
+  const PV_ROLES = [['admin', 'مدير النظام'], ['school', 'الإدارة'], ['head', 'رئيس القسم'], ['teacher', 'المعلم'], ['trainee', 'المتدرب']];
+  const PV_KIND = { principal: 'مدير المدرسة', assistant: 'مساعد المدير', head: 'رئيس القسم', deputy: 'نائب رئيس القسم', teacher: 'معلم', trainee: 'معلم متدرب' };
   const isOrganizer = () => !!(S.real && S.real.role === 'admin');
   const pvActive = () => (S.pv ? S.pv.role : 'admin');
   function pvBar() {
@@ -4493,7 +4540,7 @@ ${buildLogReport(rep)}
       .concat(A.filter(a => (a.kind === 'head' || a.kind === 'deputy') && (a.grants || []).some(g => g.schoolId === schoolId)).map(a => ({ ...a, delegate: true })));
     if (!deptId) return [];
     if (role === 'head') return A.filter(a => (a.kind === 'head' || a.kind === 'deputy') && a.deptId === deptId);
-    return A.filter(a => a.kind === 'teacher' && a.deptId === deptId);
+    return A.filter(a => a.kind === 'teacher' && a.deptId === deptId && !!a.trainee === (role === 'trainee'));
   }
   function pvPicker() {
     const U = S.pvUI, o = S.pvOpts;
@@ -4511,11 +4558,11 @@ ${buildLogReport(rep)}
     if (ready) {
       const list = pvCandidates(U.role, U.schoolId, U.deptId);
       const inact = (o.inactive || {})[U.schoolId + '|' + (U.role === 'school' ? 'school' : U.deptId)] || 0;
-      const what = U.role === 'school' ? 'حساب مدير أو مساعد أو مفوَّض فعّال في هذه المدرسة' : U.role === 'head' ? 'حساب رئيس قسم أو نائب فعّال في هذا القسم' : 'معلم لديه حساب فعّال في هذا القسم';
+      const what = U.role === 'school' ? 'حساب مدير أو مساعد أو مفوَّض فعّال في هذه المدرسة' : U.role === 'head' ? 'حساب رئيس قسم أو نائب فعّال في هذا القسم' : U.role === 'trainee' ? 'معلم متدرب له حساب في هذا القسم (أضفه من «المعلمون» أو من الجدول الداخلي)' : 'معلم لديه حساب فعّال في هذا القسم';
       body += list.length ? `<ul class="pv-list">${list.map(a => {
         const g = (a.grants || []).filter(x => U.role !== 'school' || x.schoolId === U.schoolId);
-        const sub = a.kind === 'teacher' ? (a.teacherName !== a.name ? esc(a.teacherName) : '') : a.delegate ? `مفوَّض (${esc(PV_KIND[a.kind])} — ${esc(a.deptName)}): ${g.map(x => esc(x.perms.join('، ')) + ' — ' + esc(x.scope) + (x.endDate ? ' — حتى ' + esc(x.endDate) : '')).join(' | ')}` : g.length ? `لديه تفويض: ${g.map(x => esc(x.perms.join('، '))).join(' | ')}` : '';
-        return `<li><button type="button" class="pv-acc${S.pv && S.pv.accountId === a.id ? ' on' : ''}" data-act="pvPick" data-id="${a.id}"><b>${esc(a.name)}</b><span class="pill plain">${a.delegate ? 'مفوَّض' : esc(PV_KIND[a.kind] || '')}</span>${sub ? `<span class="small muted">${sub}</span>` : ''}</button></li>`; }).join('')}</ul>`
+        const sub = a.kind === 'teacher' ? [a.teacherName !== a.name ? esc(a.teacherName) : '', a.pending ? 'لم يفعّل حسابه بعد — معاينة فقط' : ''].filter(Boolean).join(' — ') : a.delegate ? `مفوَّض (${esc(PV_KIND[a.kind])} — ${esc(a.deptName)}): ${g.map(x => esc(x.perms.join('، ')) + ' — ' + esc(x.scope) + (x.endDate ? ' — حتى ' + esc(x.endDate) : '')).join(' | ')}` : g.length ? `لديه تفويض: ${g.map(x => esc(x.perms.join('، '))).join(' | ')}` : '';
+        return `<li><button type="button" class="pv-acc${S.pv && S.pv.accountId === a.id ? ' on' : ''}" data-act="pvPick" data-id="${a.id}"><b>${esc(a.name)}</b><span class="pill plain">${a.delegate ? 'مفوَّض' : a.trainee ? 'متدرب' : esc(PV_KIND[a.kind] || '')}</span>${sub ? `<span class="small muted">${sub}</span>` : ''}</button></li>`; }).join('')}</ul>`
         : `<div class="notice warn small" role="note"><b>لا يوجد ${what}.</b><span>لا تُنشأ حسابات أو بيانات تجريبية للمعاينة.</span></div>`;
       if (inact) body += `<span class="small muted">${inact} ${inact === 1 ? 'حساب غير مفعّل أو معطّل لا يمكن معاينته' : 'حسابات غير مفعّلة أو معطّلة لا يمكن معاينتها'}.</span>`;
     }
@@ -4542,8 +4589,8 @@ ${buildLogReport(rep)}
   async function pvStart(a) {
     const sc = S.pvOpts.schools.find(x => x.id === a.schoolId);
     // المفوَّض يُعرض تحت «الإدارة» لأنه اختير منها، لكن صلاحياته في الخادم صلاحيات حسابه وتفويضه فقط
-    S.pv = { accountId: a.id, role: a.kind === 'principal' || a.kind === 'assistant' || a.delegate ? 'school' : a.kind === 'teacher' ? 'teacher' : 'head',
-      kind: a.kind, name: a.name, schoolId: a.schoolId, deptId: a.deptId || null, place: [sc ? sc.name : '', a.deptName || ''].filter(Boolean).join(' — '), delegate: !!a.delegate };
+    S.pv = { accountId: a.id, role: a.kind === 'principal' || a.kind === 'assistant' || a.delegate ? 'school' : a.kind === 'teacher' ? (a.trainee ? 'trainee' : 'teacher') : 'head',
+      kind: a.trainee ? 'trainee' : a.kind, name: a.name, schoolId: a.schoolId, deptId: a.deptId || null, place: [sc ? sc.name : '', a.deptName || ''].filter(Boolean).join(' — '), delegate: !!a.delegate };
     S.pvUI = null; pvReset(); S.me = null; ntAskClose();
     const root = $('#app'); root.innerHTML = shell(loading('جارٍ فتح المعاينة…')); paintChrome();
     try { S.me = await callServer(S.token, 'me.get'); }
@@ -5053,7 +5100,15 @@ ${buildLogReport(rep)}
   const HA_ORD = ['present', 'late', 'absent', 'none'];
   // لون خانة الحصة في جدول القسم: الاستئذان أصفر للحصص المتأثرة فقط
   const hdCls = (r, p) => (r.st === 'present' ? 'ok' : r.st === 'absent' ? 'bad' : r.st === 'late' ? ((r.affected || []).includes(p) ? 'warn' : 'ok') : 'none');
-  const hwBox = (id, title, inner, sub) => `<section class="panel hw-card" data-hw="${id}" aria-label="${esc(title)}"><h2 class="hw-t">${esc(title)}${sub ? ` <small>${sub}</small>` : ''}</h2>${inner}</section>`;
+  // اسم مختصر لجدول القسم على الجوال: الاسم الأول والأخير (بدون «أ/»)
+  const hwShort = n => { const w = String(n || '').replace(/^\s*أ\s*\/\s*/, '').trim().split(/\s+/); return w.length > 2 ? w[0] + ' ' + w[w.length - 1] : w.join(' '); };
+  // الضغط على بطاقة القسم ينقل لصفحتها (رؤساء الأقسام ونوابهم والإدارة ومدير النظام فقط؛ المعلم لا)
+  const HW_GO = { dist: 'today', deptatt: '', deptday: 'schedule', debt: 'debt' };
+  let hwDept = null;
+  const hwBox = (id, title, inner, sub) => {
+    const go = hwDept && homeRole() !== 'teacher' && Object.prototype.hasOwnProperty.call(HW_GO, id);
+    return `<section class="panel hw-card${go ? ' hw-go' : ''}" data-hw="${id}" aria-label="${esc(title)}"${go ? ` data-act="homeGo" data-d="${esc(hwDept)}" data-t="${HW_GO[id]}" role="button" tabindex="0"` : ''}><h2 class="hw-t">${esc(title)}${sub ? ` <small>${sub}</small>` : ''}${go ? '<span class="hw-open" aria-hidden="true">فتح ‹</span>' : ''}</h2>${inner}</section>`;
+  };
   function hwHtml(id, x, L) {
     const dn = x.deptName ? esc(x.deptName) : '';
     if (id === 'deptatt') {
@@ -5082,7 +5137,7 @@ ${buildLogReport(rep)}
       if (!a.hasSchedule) return hwBox(id, 'جدول القسم اليوم', '<div class="small muted">لا يوجد جدول ساري للقسم اليوم.</div>', dn);
       if (!a.rows.length) return hwBox(id, 'جدول القسم اليوم', '<div class="small muted">لا حصص للقسم اليوم.</div>', dn);
       const P = a.periods;
-      return hwBox(id, 'جدول القسم اليوم', `<div class="tbl-wrap hw-dd-w"><table class="tbl hw-dd"><thead><tr><th>المعلم</th>${P.map(p => `<th class="num">${p}</th>`).join('')}</tr></thead><tbody>${a.rows.map(r => `<tr><th>${esc(r.name)}</th>${P.map(p => { const c = r.cells[p]; return c ? `<td><span class="hw-cl ${a.attOn && c.teach ? hdCls(r, p) : 'plain'}"><bdi>${esc(c.txt)}</bdi></span></td>` : '<td></td>'; }).join('')}</tr>`).join('')}</tbody></table></div>
+      return hwBox(id, 'جدول القسم اليوم', `<div class="tbl-wrap hw-dd-w"><table class="tbl hw-dd"><thead><tr><th>المعلم</th>${P.map(p => `<th class="num">${p}</th>`).join('')}</tr></thead><colgroup><col class="hw-dd-n">${P.map(() => '<col>').join('')}</colgroup><tbody>${a.rows.map(r => `<tr><th title="${esc(r.name)}">${esc(hwShort(r.name))}</th>${P.map(p => { const c = r.cells[p]; return c ? `<td><span class="hw-cl ${a.attOn && c.teach ? hdCls(r, p) : 'plain'}"><bdi>${esc(c.txt)}</bdi></span></td>` : '<td></td>'; }).join('')}</tr>`).join('')}</tbody></table></div>
         ${a.attOn ? `<div class="hw-lg small"><span class="ok-t">■ حاضر</span><span class="warn-t">■ استئذان</span><span class="bad-t">■ غائب</span><span class="muted">■ لم يسجل</span></div>` : ''}`, dn);
     }
     if (id === 'debt') {
@@ -5122,7 +5177,7 @@ ${buildLogReport(rep)}
     let x;
     try { x = await api('home.data', { want: slots.map(s0 => s0.dataset.hws), deptId: L.opts.dept || undefined }); }
     catch (e) { for (const s0 of slots) s0.innerHTML = `<section class="panel hw-card"><div class="notice warn small">تعذّر تحميل البطاقة: ${esc(e.message)}</div></section>`; return; }
-    S.v.homeDepts = x.depts || [];
+    S.v.homeDepts = x.depts || []; hwDept = x.deptId || null;
     for (const s0 of slots) { if (!s0.isConnected) continue; s0.innerHTML = hwHtml(s0.dataset.hws, x, L); }
     const ed = document.querySelector('#hw-ed-dept'); if (ed && !ed.options.length) { /* تُملأ عند فتح التخصيص */ }
   }
@@ -5151,6 +5206,7 @@ ${buildLogReport(rep)}
   // تعديلات لوحة التخصيص محلية: تُعاد رسم اللوحة وحدها، والواجهة تتغير بعد «حفظ»
   function homeEdPaint() { const box = document.querySelector('.hw-editor'); if (!box) return refresh(); const n = document.createElement('div'); n.innerHTML = homeEditor(homeLayout(), homeCat()); box.replaceWith(n.firstElementChild); }
   const HOME_ACT = {
+    homeGo: d => { if (!d.d || homeRole() === 'teacher') return; go('dept', { deptId: d.d, tab: d.t || null }); window.scrollTo(0, 0); },
     homeEdit: () => { S.v.homeEdit = !S.v.homeEdit; S.v.homeDraft = null; refresh(); },
     homeToggle: d => { const E0 = S.v.homeDraft; if (!E0) return; E0.on = E0.on.includes(d.id) ? E0.on.filter(x => x !== d.id) : E0.on.concat(d.id); homeEdPaint(); },
     homeMove: d => { const E0 = S.v.homeDraft; if (!E0) return; const i = Number(d.i), j = i + Number(d.d); if (j < 0 || j >= E0.order.length) return; const t = E0.order[i]; E0.order[i] = E0.order[j]; E0.order[j] = t; homeEdPaint(); const b = document.querySelector(`.hw-editor [data-act="homeMove"][data-i="${j}"][data-d="${d.d}"]`); if (b && !b.disabled) b.focus({ preventScroll: true }); },
@@ -6051,7 +6107,7 @@ ${buildLogReport(rep)}
       // ألوان بلاغ الحضور (إن كانت الخاصية مفعّلة للقسم): حاضر أخضر، استئذان أصفر، غائب أحمر، ومن لم يسجل بلا لون
       const attL = dep.attOn ? await api('att.list', { deptId: dep.id }).catch(() => null) : null;
       const people = membersPanel(dep, others, attL, S.me.role === 'admin' && dep.schoolId ? `<div class="row no-print"><button class="btn sm" data-act="deptDeps" data-id="${dep.id}">إدارة النواب وحساباتهم</button><button class="btn sm" data-act="nav" data-r="accounts">حسابات المدرسة</button><button class="btn sm" data-act="tab" data-t="info">تحديد رئيس القسم</button></div>` : '', true);
-      el.innerHTML = `<div class="dept-head">${headHtml}${delegNote}</div><div id="tab" data-key="${esc(key)}">${people}<h2>أدوات القسم</h2><nav class="tiles" aria-label="وظائف القسم">${DEPT_TABS.filter(([k]) => tabOk(k) && !(k === 'import' && dep.schedSource === 'admin')).map(([k, l]) => tileBtn(`data-act="tab" data-t="${k}"`, l, k === 'schedule' && dep.schedSource ? 'المصدر: ' + SRC_LABEL[dep.schedSource] : DEPT_TILE_INFO[k][0], DEPT_TILE_INFO[k][1])).join('')}</nav></div>`;
+      el.innerHTML = `<div class="dept-head">${headHtml}${delegNote}</div><div id="tab" data-key="${esc(key)}">${people}<h2>أدوات القسم</h2><nav class="tiles" aria-label="وظائف القسم">${DEPT_TABS.filter(([k]) => tabOk(k) && !(k === 'import' && (dep.schedSource === 'admin' || dep.schedSource === 'internal'))).map(([k, l]) => tileBtn(`data-act="tab" data-t="${k}"`, l, k === 'schedule' && dep.schedSource ? 'المصدر: ' + SRC_LABEL[dep.schedSource] : DEPT_TILE_INFO[k][0], DEPT_TILE_INFO[k][1])).join('')}</nav></div>`;
       return;
     }
     if (!tabOk(S.tab)) { el.innerHTML = `<div class="dept-head">${headHtml}</div><div class="panel">${missingCard('هذه الوظيفة ليست ضمن صلاحياتك في هذا القسم.', ['ارجع إلى القسم واختر وظيفة متاحة.'])}</div>`; return; }
@@ -6200,7 +6256,19 @@ ${buildLogReport(rep)}
     el.innerHTML = `
       ${isAdmin ? `<div class="panel"><h2>إضافة معلم إلى «${esc(dep.name)}»</h2>
         <form class="row" data-form="teacherCreate"><div class="field" style="flex:1;min-width:220px"><label for="tc-name">اسم المعلم</label><input class="input" id="tc-name" name="name" required></div><button class="btn primary" type="submit" style="align-self:flex-end">إضافة</button></form>
-        <span class="help small muted">يُضاف المعلم في آخر ترتيب الدور. لا تُنشأ له حسابات دخول.</span></div>` : ''}
+        <span class="help small muted">يُضاف المعلم في آخر ترتيب الدور. لا تُنشأ له حسابات دخول.</span></div>
+      <div class="panel" id="trainee-add"><h2>إضافة معلم متدرب إلى «${esc(dep.name)}»</h2>
+        ${S.v.issued && S.v.issued.trainee ? issuedBox(S.v.issued) : ''}
+        <form class="form" data-form="traineeAdd">
+          <div class="form-row">
+            <div class="field"><label for="tr-name">اسم المعلم المتدرب</label><input class="input" id="tr-name" name="name" required autocomplete="off"></div>
+            <div class="field"><label for="tr-civil">الرقم المدني</label><input class="input ltr" id="tr-civil" name="civilId" required inputmode="numeric" maxlength="12" autocomplete="off"></div>
+            <div class="field"><label for="tr-wa">رقم النقال <span class="muted">(اختياري)</span></label><input class="input ltr" id="tr-wa" name="whatsapp" inputmode="numeric" maxlength="12" placeholder="XXXXXXXX" autocomplete="off"></div>
+          </div>
+          <label class="check small"><input type="checkbox" name="inRotation" value="1"> يدخل ترتيب الدور (يأخذ احتياط) — يحتاج سطرًا له في جدول القسم</label>
+          <div><button class="btn primary" type="submit" data-busy="جارٍ الإضافة…">إضافة المتدرب وإنشاء حسابه</button></div>
+        </form>
+        <span class="help small muted">يُنشأ له سجل معلم في هذا القسم وحساب «معلم» برمز تفعيل يظهر مرة واحدة؛ يختار هو كلمة مروره. المتدرب يرى «جدولي» فقط ولا يرى جدول القسم. لإزالته لاحقًا: «أرشفة» من الجدول أدناه.</span></div>` : ''}
       ${waXlsxPanel()}
       ${tiCanDept(dep) ? `<div class="panel" id="ti-entry"><div class="panel-head"><h2>حسابات المعلمين من Excel</h2></div>
         <p class="help small muted">أنشئ حسابات «معلم» لمعلمي ${MGR() ? 'أقسام المدرسة' : 'القسم'} وسجّل أرقامهم دفعة واحدة من ملف Excel. تُعرض المعاينة قبل أي حفظ، ويختار كل معلم كلمة مروره بنفسه عند التفعيل.</p>
@@ -6257,7 +6325,7 @@ ${buildLogReport(rep)}
     const info = x => {
       const i = src[x] || {};
       if (!i.ready) return x === 'admin' && S.v.ttStat ? ttStatusHtml(S.v.ttStat) : `<span class="src-state bad">${esc(i.reason || 'لا يوجد جدول صالح.')}</span>`;
-      const what = x === 'admin' ? `جدول المدرسة المعتمد — الإصدار ${i.version}${i.effectiveFrom ? `، يسري من <bdi>${esc(i.effectiveFrom)}</bdi>` : ''}${i.withProblems ? ` <span class="pill warn">معتمد مع مشاكل (${i.withProblems})</span>` : ''}` : `ملف <bdi>${esc(i.fileName || '—')}</bdi> — الإصدار ${i.version}، اعتُمد ${i.approvedAt ? fmtTime(i.approvedAt) : ''}`;
+      const what = x === 'admin' ? `جدول المدرسة المعتمد — الإصدار ${i.version}${i.effectiveFrom ? `، يسري من <bdi>${esc(i.effectiveFrom)}</bdi>` : ''}${i.withProblems ? ` <span class="pill warn">معتمد مع مشاكل (${i.withProblems})</span>` : ''}` : `نفس أوقات جدول الإدارة (الإصدار ${i.base || '—'})، والتوزيع من الشاشة أدناه`;
       return `<span class="src-state ok">جاهز: ${what}</span>${i.upcoming ? `<span class="small muted">إصدار لاحق: ${i.upcoming.version}${i.upcoming.effectiveFrom ? ` يسري من <bdi>${esc(i.upcoming.effectiveFrom)}</bdi>` : ''}</span>` : ''}${(i.missingTeachers || []).length ? `<span class="src-state warn">معلمون فعّالون ليسوا في هذا الجدول: ${i.missingTeachers.map(esc).join('، ')}. لا يُخمَّن جدولهم، ويتوقف التوزيع إن كان أحدهم في الدور.</span>` : ''}`;
     };
     const sw = `<button type="button" class="src-switch ${draft ? 'is-' + draft : 'is-none'}" role="switch" aria-checked="${draft === 'admin'}" aria-label="مصدر جدول القسم: ${draft ? SRC_LABEL[draft] : 'غير محدد'}" data-act="srcToggle" ${edit ? '' : 'disabled'}>
@@ -6271,7 +6339,7 @@ ${buildLogReport(rep)}
     return `<section class="panel src-panel" aria-label="مصدر جدول القسم">
       <div class="row" style="justify-content:space-between;align-items:center"><h2>مصدر جدول القسم ${srcBadge(cur)}</h2>${changed ? '<span class="pill warn">لم يُحفظ</span>' : ''}</div>
       <div class="src-row">${sw}<b class="src-now src-${draft || 'none'}">${draft ? 'المصدر المختار: ' + SRC_LABEL[draft] : 'لم يُحدَّد المصدر بعد'}</b></div>
-      <span class="help small muted">«الإدارة»: جدول القسم من «جدول المدرسة» المعتمد والمفعّل (للعرض فقط هنا). «الجدول الداخلي»: جدول Excel يستورده القسم ويعتمده. الإطفاء يعني اختيار الجدول الداخلي، لا تعطيل جدول القسم.</span>
+      <span class="help small muted">«الإدارة»: جدول القسم من «جدول المدرسة» المعتمد والمفعّل (للعرض فقط هنا). «الجدول الداخلي»: نفس أوقات جدول الإدارة، لكن رئيس القسم يوزّع الشعب على معلميه ومتدربيه من الشاشة أدناه. الإطفاء يعني اختيار الجدول الداخلي، لا تعطيل جدول القسم.</span>
       ${src.pending ? `<div class="notice info small"><b>تغيير مجدول:</b><span>إلى «${SRC_LABEL[src.pending.source]}» يسري من <bdi>${esc(src.pending.from)}</bdi> — ${esc(src.pending.by || '')}.</span></div>` : ''}
       <div class="src-grid"><div class="src-card ${draft === 'admin' ? 'sel' : ''}"><b>الإدارة</b>${info('admin')}</div><div class="src-card ${draft === 'internal' ? 'sel' : ''}"><b>الجدول الداخلي</b>${info('internal')}</div></div>
       ${changed ? `<div class="src-confirm">
@@ -6279,11 +6347,150 @@ ${buildLogReport(rep)}
         <div class="field" style="max-width:260px"><label for="src-from">تاريخ بدء السريان</label><input class="input" type="date" id="src-from" min="${today0}" value="${esc(fromV)}" data-act="srcFrom"></div>
         ${ready ? '<span class="help small muted">لا يتغير الدين ولا الدور ولا إعدادات الاحتياط ولا الأيام المعتمدة. المسودات غير المعتمدة تحتاج إعادة حساب. الجدول الآخر يبقى محفوظًا للعودة إليه.</span>'
           : later ? `<div class="notice info small"><b>الجدول يبدأ سريانه في <bdi>${esc(later)}</bdi>.</b><span>اختر تاريخ سريان من <bdi>${esc(later)}</bdi> أو بعده ليصبح الحفظ ممكنًا؛ المصدر الحالي يبقى فعّالًا قبله.</span></div>`
-          : `<div class="notice warn small"><b>لا يمكن الحفظ الآن.</b><span>${draft === 'admin' && S.v.ttStat ? 'لا يوجد جدول مدرسة معتمد ومفعّل لهذا القسم — التفاصيل في بطاقة «الإدارة» أعلاه.' : esc((src[draft] || {}).reason || '')} يبقى المصدر الحالي فعّالًا حتى يكتمل.</span></div>${draft === 'internal' && can('schedule') ? '<div><button class="btn" data-act="tab" data-t="import">استيراد جدول داخلي واعتماده</button></div>' : ''}`}
+          : `<div class="notice warn small"><b>لا يمكن الحفظ الآن.</b><span>${draft === 'admin' && S.v.ttStat ? 'لا يوجد جدول مدرسة معتمد ومفعّل لهذا القسم — التفاصيل في بطاقة «الإدارة» أعلاه.' : esc((src[draft] || {}).reason || '')} يبقى المصدر الحالي فعّالًا حتى يكتمل.</span></div>`}
         <div class="row"><button class="btn primary" data-act="srcSave" data-busy="جارٍ الحفظ…" ${ready ? '' : 'disabled'}>حفظ مصدر الجدول</button><button class="btn" data-act="srcReset">تراجع</button></div></div>` : ''}
       ${!edit ? '<span class="small muted">تغيير المصدر ليس ضمن صلاحياتك في هذا القسم.</span>' : ''}
     </section>`;
   }
+  /* ================= الجدول الداخلي للقسم (النظام الجديد) =================
+     الأوقات من جدول الإدارة، وتوزيع الشعب على معلمي القسم (والمتدربين) يدويًا: ضغط ثم «ضع هنا»، أو تبديل، أو سحب مطوّل.
+     كل تعديل يُحفظ في الخادم فورًا، ويُفحص التعارض هناك أيضًا. */
+  const ITT_DAYS = { sun: 'الأحد', mon: 'الاثنين', tue: 'الثلاثاء', wed: 'الأربعاء', thu: 'الخميس', fri: 'الجمعة', sat: 'السبت' };
+  const ittGrade = s => { const m = /^\s*([6-9])/.exec(String(s)); return m ? 'g' + m[1] : 'g0'; };
+  const ittShort = n => String(n || '').replace(/^\s*أ\s*\/\s*/, '');
+  function ittSlotTxt(slots) {
+    const by = {}; for (const s of slots) { const [d, p] = s.split('|'); (by[d] = by[d] || []).push(Number(p)); }
+    return Object.entries(by).map(([d, ps]) => `${ITT_DAYS[d] || d} ${ps.sort((a, b) => a - b).join('–')}`).join('، ');
+  }
+  const ittSec = (x, sec) => x.sections.find(s => s.sec === sec);
+  const ittOwned = (x, tid) => x.sections.filter(s => s.owner === tid).sort((a, b) => (a.slots[0] < b.slots[0] ? -1 : 1));
+  // انشغال (للتلميح فقط؛ الخادم يفحص من جديد)
+  function ittBusyC(x, tid, sec, except) {
+    const sl = new Set(ittSec(x, sec).slots);
+    for (const o of x.sections) { if (o.sec === sec || o.sec === except || o.owner !== tid) continue; if (o.slots.some(s => sl.has(s))) return o.sec; }
+    const c = x.commits.find(c0 => c0.t === tid && sl.has(c0.s)); return c ? c.name : null;
+  }
+  function ittChip(x, s, extra) {
+    return `<div class="itt-chip ${ittGrade(s.sec)}${s.manual ? ' mine' : ''}${extra ? ' ' + extra : ''}" data-sec="${esc(s.sec)}" ${x.canEdit ? 'role="button" tabindex="0"' : ''} aria-label="${esc(s.sec)} — ${esc(ittSlotTxt(s.slots))}"><b>${esc(s.sec)}</b><small>${esc(ittSlotTxt(s.slots))}</small></div>`;
+  }
+  function ittDistHtml(x) {
+    const sel = S.v.ittSel && ittSec(x, S.v.ittSel) ? S.v.ittSel : null; if (!sel) S.v.ittSel = null;
+    const selOwner = sel ? ittSec(x, sel).owner : null;
+    const rows = x.teachers.map(t => {
+      const mine = ittOwned(x, t.id), periods = mine.reduce((a, s) => a + s.slots.length, 0);
+      let chips = mine.map(s => { let c = ''; if (sel) { if (s.sec === sel) c = 'sel'; else if (t.id !== selOwner) c = !ittBusyC(x, t.id, sel, s.sec) && !ittBusyC(x, selOwner, s.sec, sel) ? 'swap' : 'noswap'; } return ittChip(x, s, c); }).join('');
+      if (sel && selOwner !== t.id) { const b = ittBusyC(x, t.id, sel); chips += b ? `<div class="itt-slot no" aria-disabled="true">مشغول: عنده ${esc(b)} في الوقت نفسه</div>` : `<div class="itt-slot" data-drop="${t.id}" role="button" tabindex="0">ضع ${esc(sel)} هنا</div>`; }
+      if (!chips) chips = '<span class="small muted">لا شعب</span>';
+      return `<div class="itt-row${t.trainee ? ' trainee' : ''}" data-row="${t.id}"><div class="itt-who"><b>${esc(ittShort(t.name))}${t.head ? ' <span class="pill plain">رئيس القسم</span>' : ''}${t.trainee ? ' <span class="pill warn plain">متدرب</span>' : ''}</b><small>${mine.length} شعبة · ${periods} حصة</small></div><div class="itt-chips">${chips}</div></div>`;
+    }).join('');
+    const tr = S.v.issued && S.v.issued.trainee ? issuedBox(S.v.issued) : '';
+    return `${S.v.ittFlash ? `<div class="notice ${S.v.ittFlash.c} small" role="status">${esc(S.v.ittFlash.t)}</div>` : ''}
+      ${x.canEdit ? `<div class="help small muted">${sel ? `<b>محدد: ${esc(sel)}</b> — اضغط «ضع هنا» أمام أي معلم لنقلها إليه، أو اضغط شعبة عند معلم آخر (المنقّطة) للتبديل. اضغط ${esc(sel)} مرة ثانية للإلغاء.` : 'اضغط على مربع شعبة لتحديدها ثم اختر مكانها، أو اضغط عليه مطولًا واسحبه إلى معلم آخر. النقطة الزرقاء = شعبة نقلتها عن جدول الإدارة.'}</div>
+      <div class="row"><button class="btn sm" data-act="ittUndo" ${x.canUndo ? '' : 'disabled'} data-busy="جارٍ…">تراجع</button><button class="btn sm" data-act="ittReset" data-busy="جارٍ…" ${x.sections.some(s => s.manual) ? '' : 'disabled'}>إعادة كما في جدول الإدارة</button></div>` : '<div class="small muted">للعرض فقط: التعديل لرئيس القسم ومدير النظام والإدارة.</div>'}
+      <div class="itt-rows">${rows}</div>
+      ${x.canEdit ? `<details class="panel itt-add"${tr || S.v.ittAddOpen ? ' open' : ''}><summary><b>إضافة معلم متدرب</b></summary>${tr}
+        <form class="form" data-form="ittTrainee"><div class="form-row"><div class="field"><label for="itt-tn">الاسم</label><input class="input" id="itt-tn" name="name" required autocomplete="off"></div>
+          <div class="field"><label for="itt-tc">الرقم المدني</label><input class="input ltr" id="itt-tc" name="civilId" required inputmode="numeric" maxlength="12" autocomplete="off"></div>
+          <div class="field"><label for="itt-tw">النقال <span class="muted">(اختياري)</span></label><input class="input ltr" id="itt-tw" name="whatsapp" inputmode="numeric" maxlength="12" autocomplete="off"></div></div>
+          <div><button class="btn primary" type="submit" data-busy="جارٍ الإضافة…">إضافة وإنشاء حسابه</button></div></form>
+        <span class="help small muted">يصير معلمًا في القسم بحساب «معلم» (رمز تفعيل يظهر مرة واحدة)، يرى «جدولي» فقط. أعطه شعبًا من هنا؛ ومع «الجدول الداخلي» يدخل الاحتياط والدور والدين بحصصه. لإزالته: «أرشفة» من «المعلمون».</span></details>` : ''}`;
+  }
+  function ittWeekHtml(x) {
+    const days = x.days, P = d => (x.periodsByDay[d] || []);
+    const head = `<tr><th class="n" rowspan="2">المعلم</th>${days.map(d => `<th colspan="${P(d).length}" class="dh">${ITT_DAYS[d]}</th>`).join('')}</tr><tr>${days.map(d => P(d).map((p, i) => `<th class="${i === 0 ? 'ds' : ''}">${p}</th>`).join('')).join('')}</tr>`;
+    const clash = new Set(x.clash || []);
+    const body = x.teachers.map(t => {
+      const at = {}; for (const s of ittOwned(x, t.id)) for (const sl of s.slots) (at[sl] = at[sl] || []).push(s.sec);
+      const cm = {}; for (const c of x.commits) if (c.t === t.id) cm[c.s] = c.name;
+      return `<tr><th class="n">${esc(ittShort(t.name))}${t.trainee ? ' <span class="pill warn plain">متدرب</span>' : ''}</th>${days.map(d => P(d).map((p, i) => { const k = d + '|' + p, a = at[k] || [];
+        return `<td class="${i === 0 ? 'ds' : ''}${a.length > 1 || a.some(s => clash.has(s)) ? ' clash' : ''}${!a.length && cm[k] ? ' cm' : ''}">${a.map(s => `<span class="itt-c ${ittGrade(s)}">${esc(s)}</span>`).join('') || (cm[k] ? `<span class="small">${esc(cm[k])}</span>` : '')}</td>`; }).join('')).join('')}</tr>`;
+    }).join('');
+    return `<div class="help small muted">الأوقات من جدول الإدارة (الإصدار ${x.baseVersion})، والمعلم من الجدول الداخلي. الخانات الرمادية التزامات من جدول الإدارة (مثل اجتماع القسم).</div>
+      <div class="tbl-wrap itt-wk-w"><table class="tbl itt-wk"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+  }
+  function ittUpdHtml(x) {
+    const r = x.report;
+    const rep = !r ? '<div class="small muted">لم يصل جدول إدارة جديد منذ بدء الجدول الداخلي.</div>'
+      : `<div class="small muted">آخر تحديث من الإدارة: الإصدار ${r.from != null ? r.from + ' ← ' : ''}${r.to} — ${fmtTime(r.at)}</div>
+        ${r.items.length ? `<ul class="itt-chg">${r.items.map(i => `<li class="${i.c}">${esc(i.t)}</li>`).join('')}</ul>` : '<div class="small muted">لا تغييرات أخرى.</div>'}
+        ${(r.conf || []).length ? `<h3>يحتاج قرارك</h3>${r.conf.map(c => `<div class="notice warn small"><span>${esc(c.sec)}: وزّعتها أنت على ${esc(ittShort(c.mineName))}، والإدارة غيّرت معلمها من ${esc(ittShort(c.wasName))} إلى ${esc(ittShort(c.adminName))}.</span>${x.canEdit ? `<div class="row"><button class="btn sm" data-act="ittDecide" data-sec="${esc(c.sec)}" data-v="keep" data-busy="جارٍ…">إبقاء اختياري (${esc(ittShort(c.mineName))})</button><button class="btn sm" data-act="ittDecide" data-sec="${esc(c.sec)}" data-v="admin" data-busy="جارٍ…">اعتماد تغيير الإدارة (${esc(ittShort(c.adminName))})</button></div>` : ''}</div>`).join('')}` : ''}`;
+    const cl = (x.clash || []).length ? `<div class="notice bad small"><b>تعارض في الأوقات:</b><span>${x.clash.map(esc).join('، ')} — عند معلمها في الجدول الداخلي حصة أخرى في الوقت نفسه، فبقيت مؤقتًا عند معلمها في جدول الإدارة. انقلها لمعلم فاضٍ من «توزيع الشعب».</span></div>` : '<div class="notice ok small">لا تعارض في الأوقات.</div>';
+    return `<div class="panel"><h2>ما تغيّر في الجدول الداخلي</h2>${rep}</div>${cl}
+      <div class="panel"><h2>سجل النقل</h2>${x.log.length ? `<ul class="itt-chg">${x.log.map(l => `<li><span>${esc(l.text)}</span> <span class="small muted">— ${esc(l.by)}، ${fmtTime(l.at)}</span></li>`).join('')}</ul>` : '<div class="small muted">لا يوجد.</div>'}</div>`;
+  }
+  function ittPaint() {
+    const host = $('#itt-host'), x = S.v.itt; if (!host || !x) return;
+    if (!x.ready) { host.innerHTML = `<div class="panel">${missingCard('الجدول الداخلي يُبنى فوق جدول الإدارة.', ['لا يوجد جدول إدارة معتمد ومفعّل لهذا القسم بعد. يعتمده المسؤول من «جدول المدرسة» ويفعّله للاحتياط.'])}</div>`; return; }
+    const tab = S.v.ittTab || 'dist';
+    const moved = x.sections.filter(s => s.manual).length, tr = x.teachers.filter(t => t.trainee).length;
+    host.innerHTML = `<section class="panel itt" aria-label="الجدول الداخلي">
+      <div class="panel-head"><h2>الجدول الداخلي — ${esc(S.v.ittDeptName || '')}</h2><span class="small muted">${x.teachers.length} معلمًا${tr ? ` (${tr} متدرب)` : ''} · ${moved} شعبة موزعة يدويًا · الأوقات من جدول الإدارة (الإصدار ${x.baseVersion})</span></div>
+      ${x.source !== 'internal' ? '<div class="notice info small"><span>الاحتياط الآن يمشي على «الإدارة». هذا التوزيع محفوظ، ويُطبَّق على الاحتياط والدور والدين عند اختيار «الجدول الداخلي» مصدرًا وحفظه من الأعلى.</span></div>' : ''}
+      <div class="tabs" role="tablist">${[['dist', 'توزيع الشعب'], ['week', 'الجدول الأسبوعي'], ['upd', `تحديث جدول الإدارة${x.report && (x.report.conf || []).length ? ` (${x.report.conf.length})` : ''}`]].map(([k, l]) => `<button role="tab" aria-selected="${tab === k}" data-act="ittTab" data-t="${k}">${l}</button>`).join('')}</div>
+      <div class="itt-body">${tab === 'week' ? ittWeekHtml(x) : tab === 'upd' ? ittUpdHtml(x) : ittDistHtml(x)}</div></section>`;
+    S.v.ittFlash = null;
+  }
+  async function ittMount(dep) {
+    S.v.ittDeptName = dep.name;
+    S.v.itt = await api('itt.get', D());
+    ittPaint();
+  }
+  async function ittDo(op, args) {
+    const x = S.v.itt;
+    try { const r = await api(op, { ...D(), rev: x.rev, ...args }); S.v.itt = r.view; if (r.msg) S.v.ittFlash = { c: 'ok', t: r.msg + ' — حُفظ.' }; }
+    catch (e) { S.v.ittFlash = { c: 'bad', t: e.message }; if (e.code === 'conflict' && /حساب آخر/.test(e.message)) S.v.itt = await api('itt.get', D()); }
+    S.v.ittSel = null; ittPaint();
+  }
+  const ITT_ACT = {
+    ittTab: d => { S.v.ittTab = d.t; S.v.ittSel = null; ittPaint(); },
+    ittPick: sec => { const x = S.v.itt; if (!x || !x.canEdit) return; const sel = S.v.ittSel;
+      if (!sel) { S.v.ittSel = sec; return ittPaint(); }
+      if (sel === sec) { S.v.ittSel = null; return ittPaint(); }
+      if (ittSec(x, sel).owner === ittSec(x, sec).owner) { S.v.ittSel = sec; return ittPaint(); }
+      ittDo('itt.swap', { a: sel, b: sec }); },
+    ittUndo: (d, el) => busy(el, () => ittDo('itt.undo', {})),
+    ittReset: (d, el) => busy(el, () => ittDo('itt.reset', {})),
+    ittDecide: (d, el) => busy(el, () => ittDo('itt.decide', { sec: d.sec, keep: d.v === 'keep' }))
+  };
+  // الضغط على مربع شعبة أو خانة «ضع هنا» (يُعالَج هنا لا عبر data-act حتى يعمل السحب المطوّل معه)
+  document.addEventListener('click', e => {
+    const host = e.target.closest && e.target.closest('#itt-host'); if (!host) return;
+    if (ittDrag.moved) { ittDrag.moved = false; return; }
+    const slot = e.target.closest('.itt-slot[data-drop]'), chip = e.target.closest('.itt-chip[data-sec]');
+    if (slot && S.v.ittSel) { e.preventDefault(); ittDo('itt.move', { sec: S.v.ittSel, to: slot.dataset.drop }); return; }
+    if (chip && (S.v.ittTab || 'dist') === 'dist') { e.preventDefault(); ITT_ACT.ittPick(chip.dataset.sec); }
+  });
+  document.addEventListener('keydown', e => {
+    if (!e.target.closest || !e.target.closest('#itt-host')) return;
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.itt-chip[data-sec], .itt-slot[data-drop]')) { e.preventDefault(); e.target.click(); }
+    if (e.key === 'Escape' && S.v.ittSel) { S.v.ittSel = null; ittPaint(); }
+  });
+  // السحب بالضغط المطوّل (لمس وفأرة)
+  const ittDrag = { t: null, sec: null, ghost: null, moved: false, x: 0, y: 0 };
+  document.addEventListener('pointerdown', e => {
+    const c = e.target.closest && e.target.closest('#itt-host .itt-chip[data-sec]'); if (!c || !S.v.itt || !S.v.itt.canEdit || (S.v.ittTab || 'dist') !== 'dist') return;
+    ittDrag.x = e.clientX; ittDrag.y = e.clientY; ittDrag.sec = c.dataset.sec;
+    ittDrag.t = setTimeout(() => { S.v.ittSel = ittDrag.sec; ittPaint(); const src = document.querySelector(`#itt-host .itt-chip[data-sec="${CSS.escape(ittDrag.sec)}"]`); if (!src) return;
+      const g = src.cloneNode(true); g.classList.add('itt-ghost'); g.style.left = ittDrag.x + 'px'; g.style.top = ittDrag.y + 'px'; document.body.appendChild(g); ittDrag.ghost = g; try { if (navigator.vibrate) navigator.vibrate(15); } catch (_) { } }, 350);
+  });
+  document.addEventListener('pointermove', e => {
+    if (ittDrag.t && !ittDrag.ghost && Math.hypot(e.clientX - ittDrag.x, e.clientY - ittDrag.y) > 8) { clearTimeout(ittDrag.t); ittDrag.t = null; }
+    if (!ittDrag.ghost) return; e.preventDefault(); ittDrag.ghost.style.left = e.clientX + 'px'; ittDrag.ghost.style.top = e.clientY + 'px';
+    document.querySelectorAll('.itt-slot.over').forEach(x => x.classList.remove('over'));
+    const el = document.elementFromPoint(e.clientX, e.clientY); const s = el && el.closest('.itt-slot[data-drop]'); if (s) s.classList.add('over');
+  }, { passive: false });
+  document.addEventListener('pointerup', e => {
+    clearTimeout(ittDrag.t); ittDrag.t = null; if (!ittDrag.ghost) return;
+    ittDrag.ghost.remove(); ittDrag.ghost = null; ittDrag.moved = true; setTimeout(() => { ittDrag.moved = false; }, 60);
+    const el = document.elementFromPoint(e.clientX, e.clientY), x = S.v.itt, sel = S.v.ittSel; if (!el || !x || !sel) return;
+    const s = el.closest('.itt-slot[data-drop]'), c = el.closest('.itt-chip[data-sec]'), r = el.closest('.itt-row[data-row]');
+    if (s) ittDo('itt.move', { sec: sel, to: s.dataset.drop });
+    else if (c && c.dataset.sec !== sel && ittSec(x, c.dataset.sec).owner !== ittSec(x, sel).owner) ittDo('itt.swap', { a: sel, b: c.dataset.sec });
+    else if (r && r.dataset.row !== ittSec(x, sel).owner) ittDo('itt.move', { sec: sel, to: r.dataset.row });
+    else { S.v.ittSel = null; ittPaint(); }
+  });
+  document.addEventListener('pointercancel', () => { clearTimeout(ittDrag.t); ittDrag.t = null; if (ittDrag.ghost) { ittDrag.ghost.remove(); ittDrag.ghost = null; } });
+  document.addEventListener('contextmenu', e => { if (e.target.closest && e.target.closest('#itt-host .itt-chip')) e.preventDefault(); });
   async function scheduleView(el, dep) {
     const isAdmin = can('schedule');
     if (!dep) dep = await api('dept.get', D());
@@ -6299,6 +6506,8 @@ ${buildLogReport(rep)}
     const panel = srcPanel(dep, src);
     // المصدر المختار بلا جدول صالح: السبب فقط، دون تخمين ودون عرض جدول المصدر الآخر
     const reason = src.current ? src[src.current].reason : null;
+    // «الجدول الداخلي» (الحالي أو المختار قبل الحفظ): شاشة توزيع الشعب الجديدة بدل استيراد Excel
+    if ((S.v.srcDraft || src.current) === 'internal') { el.innerHTML = `${head}${panel}<div id="itt-host"><div class="panel">${loading()}</div></div>`; await ittMount(dep); return; }
     if (!sch.current && (src.saved || !sch.approved)) {
       const noneMsg = 'لم يُحدَّد مصدر جدول القسم بعد: «الإدارة» بعد اعتماد جدول المدرسة وتفعيله للاحتياط (التفاصيل في بطاقة «الإدارة» أعلاه)، أو «الجدول الداخلي» باستيراد ملف Excel للقسم واعتماده.';
       el.innerHTML = `${head}${panel}<div class="panel">${missingCard(reason ? 'لا يوجد جدول صالح للمصدر المختار.' : 'لا يوجد جدول معتمد للقسم بعد.', [reason || noneMsg])}
@@ -10616,6 +10825,16 @@ ${buildLogReport(rep)}
       await api('dept.update', { deptId: S.deptId, name: f.name, ...(f.school != null ? { school: f.school } : {}), status: f.status, headTeacherId: f.headTeacherId || null });
       toast('حُفظت بيانات القسم.', 'ok'); render();
     },
+    ittTrainee: async (f, form) => {
+      const r = await api('teacher.addTrainee', { deptId: S.deptId, name: f.name, civilId: f.civilId, whatsapp: f.whatsapp || null });
+      S.v.issued = { code: r.code, expiresAt: r.expiresAt, purpose: 'activate', name: r.account.name, trainee: true }; S.v.ittAddOpen = true;
+      S.v.itt = await api('itt.get', D()); S.v.ittFlash = { c: 'ok', t: `أُضيف ${r.account.name}. أعطه شعبًا بالضغط على شعبة ثم «ضع هنا» أمامه، وسلّمه رمز التفعيل.` }; ittPaint();
+    },
+    traineeAdd: async (f, form) => {
+      const r = await api('teacher.addTrainee', { deptId: S.deptId, name: f.name, civilId: f.civilId, whatsapp: f.whatsapp || null, inRotation: f.inRotation === '1' });
+      S.v.issued = { code: r.code, expiresAt: r.expiresAt, purpose: 'activate', name: r.account.name, trainee: true }; form.reset();
+      toast('أُضيف المتدرب وأُنشئ حسابه. سلّمه رمز التفعيل.', 'ok'); refresh(); setTimeout(() => { const b = $('#trainee-add'); if (b) b.scrollIntoView({ block: 'start' }); }, 50);
+    },
     teacherCreate: async (f, form) => { await api('teacher.create', { deptId: S.deptId, name: f.name }); toast('أُضيف المعلم.', 'ok'); refresh(); setTimeout(() => { const i = $('#tc-name'); if (i) i.focus(); }, 250); },
     teacherWa: async (f, form) => {
       const n = String(f.whatsapp || '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[\s+\-().\u200e\u200f]/g, '');
@@ -10745,7 +10964,7 @@ ${buildLogReport(rep)}
     atClear: (d, el) => busy(el, async () => { await api('admin.teacherLink', { teacherId: null }); S.v.atOpts = null; await atRefreshMe(); toast('أُلغي الربط.', 'ok'); refresh(); }),
     moreToggle: (d, el) => { const det = el.closest('details'); if (!det) return; det.open = !det.open; S.moreOpen = det.open; }
   });
-  Object.assign(ACT, ATT_ACT); Object.assign(ACT, HOME_ACT);
+  Object.assign(ACT, ATT_ACT); Object.assign(ACT, HOME_ACT); Object.assign(ACT, ITT_ACT);
   Object.assign(ACT, TT_ACT); Object.assign(ACT, TA_ACT); Object.assign(ACT, TI_ACT); Object.assign(FORM, TT_FORM);
   Object.assign(ACT, PV_ACT); Object.assign(ACT, NT_ACT); Object.assign(FORM, NT_FORM);
   // أثناء المعاينة: روابط واتساب لا تُفتح (لا إرسال رسائل من المعاينة)

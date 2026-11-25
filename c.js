@@ -2256,6 +2256,7 @@
         }
         const v = { version: cur + 1, approvedAt: iso(), approvedBy: ctx.name, ...clean, source: { kind: 'school-timetable', activationId: id, draftRev: ev.draftRow.data.rev || 0, note: withProblems ? `من «جدول المدرسة» — معتمد مع مشاكل (${withProblems.count})` : ev.mode === 'manual' ? 'من «جدول المدرسة» — جدول جاهز (قوانين الجدولة معطّلة)' : 'من «جدول المدرسة» بعد الفحص', ...(withProblems ? { withProblems: withProblems.count } : {}) }, effectiveFrom: date };
         addScheduleVersion(dep, v);
+        if (X.ittAfterAdmin) X.ittAfterAdmin(d, dep, v, ctx);
         bump(dep);
         audit(d, ctx, 'تفعيل جدول المدرسة للاحتياط', `الإصدار ${v.version} يسري من ${date} (${clean.entries.filter(e => e.type === 'teach').length} حصة تدريس)`, dep.id);
         done.push({ deptId: dep.id, version: v.version });
@@ -4773,9 +4774,10 @@
       return accountCtx(s.accountId);
     }
     // سياق الحساب من بياناته المحفوظة (يُستخدم للجلسة، ولمعاينة مدير النظام لحساب آخر دون جلسة لذلك الحساب)
-    function accountCtx(accountId) {
+    // pv: معاينة مدير النظام فقط — تسمح بمعاينة حساب معلم لم يُفعَّل بعد (للقراءة على نسخة مؤقتة، دون دخول فعلي)
+    function accountCtx(accountId, pv) {
       const a = db.accounts.find(x => x.id === accountId);
-      if (!a || a.status !== 'active') return null;
+      if (!a || !(a.status === 'active' || (pv && a.kind === 'teacher' && a.status === 'pending'))) return null;
       if (a.kind === 'deputy' && a.teacherId) { const dep = db.departments.find(x => x.id === a.deptId); if (!dep || !(dep.deputyTeacherIds || []).includes(a.teacherId)) return null; }
       // حساب المعلم: يرى جدوله وتكليفاته فقط. مرتبط بسجل معلم فعّال في قسم فعّال ومدرسة فعّالة (من البيانات المحفوظة)
       if (a.kind === 'teacher') {
@@ -4886,7 +4888,7 @@
        قبل أول اختيار محفوظ (الأقسام القائمة): السلوك السابق كما هو (أحدث إصدار ساري أيًا كان مصدره)، ولا يُفرض مصدر. */
     const SRC_NAME = { admin: 'الإدارة', internal: 'الجدول الداخلي' };
     const isAdminKind = k => k === 'school-timetable';
-    const kindOkFor = (src, k) => (src === 'admin' ? isAdminKind(k) : src === 'internal' ? !isAdminKind(k) : true);
+    const kindOkFor = (src, k) => (src === 'admin' ? isAdminKind(k) : src === 'internal' ? k === 'internal-tt' : k !== 'internal-tt');
     function srcEntryAt(dep, date) {
       let best = null;
       for (const e of dep.schedSource || []) if (e.from <= date && (!best || e.from >= best.from)) best = e;
@@ -4908,7 +4910,7 @@
     // سبب عدم وجود جدول صالح للمصدر في التاريخ (لا تخمين ولا انتقال تلقائي للمصدر الآخر)
     function srcMissing(dep, date, src) {
       if (src === 'admin') return 'المصدر المختار «الإدارة»: لا يوجد جدول مدرسة معتمد ومفعّل لهذا القسم يسري في ' + date + '. يعتمده المسؤول من «جدول المدرسة» ويفعّله للاحتياط.';
-      if (src === 'internal') return 'المصدر المختار «الجدول الداخلي»: لا يوجد جدول داخلي معتمد للقسم. استورد ملف Excel وراجعه ثم اعتمده.';
+      if (src === 'internal') return 'المصدر المختار «الجدول الداخلي»: يُبنى فوق جدول الإدارة، ولا يوجد جدول إدارة معتمد ومفعّل لهذا القسم يسري في ' + date + '.';
       return null;
     }
     // آخر إصدار للمصدر الحالي (أي تاريخ): لجاهزية القسم في اللوحات
@@ -5429,6 +5431,29 @@
       d.teachers.push(t); audit(d, ctx, 'إضافة معلم', name, dep.id);
       return { id: t.id };
     }));
+    /* معلم متدرب من داخل القسم: سجل معلم (متدرب: يرى جدوله فقط، وخارج الدور افتراضيًا حتى لا يوقف التوزيع بلا سطر في الجدول)
+       + حساب «معلم» بالرقم المدني برمز تفعيل لمرة واحدة. يُؤرشف لاحقًا من «المعلمون» كأي معلم. */
+    op('teacher.addTrainee', ['admin', 'school', 'head'], async (ctx, a) => {
+      const dep0 = deptIn(db, scope(ctx, a.deptId));
+      if (ctx.role === 'head' && !(ctx.kind === 'head' && ctx.deptId === dep0.id && !ctx.viaGrant)) fail('إضافة المتدربين لرئيس القسم في قسمه، أو مدير النظام والإدارة.', 'forbidden');
+      const name = cleanName(a.name, 'اسم المعلم'); const civilId = cleanCivil(a.civilId);
+      const wa = a.whatsapp != null && String(a.whatsapp).trim() !== '' ? cleanWa(a.whatsapp) : null;
+      if ((db.admin && db.admin.civilId === civilId) || db.accounts.some(x => x.civilId === civilId)) fail('يوجد حساب بهذا الرقم المدني.');
+      if (teachersOf(db, dep0.id).some(t => t.name === name)) fail('يوجد معلم بالاسم نفسه في هذا القسم. أضف ما يميّزه.');
+      const acc = { id: uid('acc'), name, civilId, deptId: dep0.id, teacherId: null, kind: 'teacher', status: 'pending', pw: null, code: null, createdAt: iso() };
+      const code = await issueCode(acc, 'activate');
+      return tx(d => {
+        const dep = deptIn(d, dep0.id);
+        if ((d.admin && d.admin.civilId === civilId) || d.accounts.some(x => x.civilId === civilId)) fail('يوجد حساب بهذا الرقم المدني.');
+        const order = teachersOf(d, dep.id).reduce((m, t) => Math.max(m, t.rotationOrder), 0) + 1;
+        const t = { id: uid('t'), deptId: dep.id, name, status: 'active', inRotation: (m0 => !!(m0 && m0.kind === ITT_KIND))(metaAt(dep, kuwaitToday(now()))), rotationOrder: order, trainee: true, demo: !!dep.demo, createdAt: iso() };
+        if (wa) t.whatsapp = wa;
+        d.teachers.push(t); acc.teacherId = t.id; d.accounts.push(acc);
+        if (dep.itt) ittMaterialize(d, dep, ctx);
+        audit(d, ctx, 'إضافة معلم متدرب', `${name}${t.inRotation ? ' — ضمن الدور' : ' — خارج الدور'}`, dep.id);
+        return { teacherId: t.id, account: { id: acc.id, name }, code, expiresAt: acc.code.expiresAt, whatsapp: wa };
+      });
+    });
     // رقم الواتساب فقط: المدير، ورئيس القسم ونوابه لمعلمي قسمهم. يُحفظ في سجل المعلم نفسه فيراه كل من في القسم.
     op('teacher.setWhatsapp', ['admin', 'head'], async (ctx, a) => tx(d => {
       const t = d.teachers.find(x => x.id === a.teacherId); if (!t) fail('المعلم غير موجود.', 'not_found');
@@ -5487,6 +5512,7 @@
       // الرقم نفسه لا يُكتب في سجل العمليات
       if (waChanged) audit(d, ctx, 'تعديل رقم الواتساب', t.name, dep.id);
       if (ch.length) { audit(d, ctx, 'تعديل معلم', `${t.name}: ${ch.join('، ')}`, dep.id); bump(dep); }
+      if (ch.length && dep.itt) ittMaterialize(d, dep, ctx);
       return { ok: true };
     }));
     op('teacher.move', ['admin'], async (ctx, a) => tx(d => {
@@ -5539,15 +5565,192 @@
         const m = metaAt(dep, today, src);
         const later = timelineOf(dep).filter(x => !x.cancelled && kindOkFor(src, x.kind) && effOf(x) > today).sort((p, q) => (effOf(p) < effOf(q) ? -1 : 1))[0] || null;
         const v = m ? (dep.scheduleVersions || []).find(x => x.version === m.version) : null;
-        const missing = v ? Array.from(active).filter(id => !v.teacherIds.includes(id)).map(id => nameIn(d, id)) : [];
+        const missing = v ? Array.from(active).filter(id => !v.teacherIds.includes(id) && !(src === 'admin' && (d.teachers.find(t => t.id === id) || {}).trainee)).map(id => nameIn(d, id)) : [];
         const act = v && v.source && v.source.activationId ? v.source.activationId : null;
         return { ready: !!v, version: v ? v.version : null, effectiveFrom: v ? v.effectiveFrom || null : null, approvedAt: v ? v.approvedAt : null, approvedBy: v ? v.approvedBy : null,
           fileName: v && v.source ? v.source.fileName || null : null, activationId: act, missingTeachers: missing, withProblems: v && v.source && v.source.withProblems ? v.source.withProblems : 0,
           upcoming: later ? { version: later.version, effectiveFrom: later.effectiveFrom || null } : null, reason: v ? null : srcMissing(dep, today, src) };
       };
+      // الجدول الداخلي يُبنى فوق جدول الإدارة عند الحاجة: جاهز متى وُجد جدول إدارة ساري (ولو لم يُبنَ إصداره بعد)
+      const intl = (() => { const r = ready('internal'); const am = metaAt(dep, today, 'admin'); const it = dep.itt || {}; const act = new Set(teachersOf(d, dep.id).filter(t => t.status === 'active').map(t => t.id));
+        const moved = Object.values(it.assign || {}).filter(id => act.has(id)).length;
+        if (r.ready) return { ...r, base: am ? am.version : null, moved };
+        const nextA = timelineOf(dep).filter(x => !x.cancelled && isAdminKind(x.kind) && effOf(x) > today).sort((p, q) => (effOf(p) < effOf(q) ? -1 : 1))[0] || null;
+        return am ? { ...r, ready: true, virtual: true, base: am.version, moved, reason: null, missingTeachers: [] } : { ...r, moved, upcoming: nextA ? { version: nextA.version, effectiveFrom: nextA.effectiveFrom || null } : null }; })();
       return { current: now0.source, saved: now0.saved, from: now0.from, by: now0.by, at: now0.at, pending: pending ? { source: pending.source, from: pending.from, by: pending.by, at: pending.at } : null,
-        admin: ready('admin'), internal: ready('internal'),
+        admin: ready('admin'), internal: intl,
         history: (dep.schedSource || []).map(e => ({ source: e.source, from: e.from, by: e.by, at: e.at, prev: e.prev || null })).reverse() };
+    }
+    /* ================= الجدول الداخلي للقسم (النظام الجديد، 2026-11) =================
+       الأوقات دائمًا من جدول الإدارة (إصدارات school-timetable). الجدول الداخلي = تعيينات يدوية «الشعبة ← المعلم» تختلف عن
+       الإدارة (dep.itt.assign) + سجل. معلم الشعبة الفعلي = التعيين إن وُجد (ومعلمه فعّال) وإلا معلمها في الإدارة.
+       يُبنى منه إصدار جدول حقيقي بنوع «internal-tt» لكل إصدار إدارة ساري/قادم (بتاريخ سريانه)، فيقرؤه الاحتياط كأي جدول
+       عندما يكون مصدر القسم «الجدول الداخلي». المتدربون سجلات معلمين حقيقية (trainee) في القسم. */
+    const ITT_KIND = 'internal-tt';
+    const DK_IDX = k => Engine.DAY_KEYS.indexOf(k);
+    const slotCmp = (a, b) => { const [da, pa] = a.split('|'), [db0, pb] = b.split('|'); return DK_IDX(da) - DK_IDX(db0) || Number(pa) - Number(pb); };
+    const verObj = (dep, n) => (dep.scheduleVersions || []).find(v => v.version === n) || (dep.scheduleApproved && dep.scheduleApproved.version === n ? dep.scheduleApproved : null);
+    const ittOf = dep => { if (!dep.itt || typeof dep.itt !== 'object') dep.itt = { assign: {}, rev: 0, log: [], hist: [], report: null, base: null }; const x = dep.itt; x.assign = x.assign || {}; x.log = x.log || []; x.hist = x.hist || []; return x; };
+    // آخر إصدار من الإدارة (للعرض والتحرير): أحدث رقم إصدار غير ملغى
+    function adminLatestV(dep) { let best = null; for (const v of timelineOf(dep)) if (!v.cancelled && isAdminKind(v.kind) && (!best || v.version > best.version)) best = v; return best ? verObj(dep, best.version) : null; }
+    function secsOf(v) {
+      const m = {};
+      for (const e of (v && v.entries) || []) if (e.type === 'teach' && e.cls) { const k = String(e.cls).trim(); (m[k] = m[k] || { slots: [], t: e.teacherId }).slots.push(e.day + '|' + e.period); }
+      for (const x of Object.values(m)) x.slots.sort(slotCmp);
+      return m;
+    }
+    const ittActive = (d, dep) => new Set(teachersOf(d, dep.id).filter(t => t.status === 'active').map(t => t.id));
+    const ittOwner = (it, M, sec, act) => { const a = it.assign[sec]; return a && act.has(a) ? a : M[sec].t; };
+    // انشغال معلم في أوقات شعبة: شعبه الأخرى (حسب التوزيع الداخلي) والتزاماته غير التدريسية في جدول الإدارة
+    function ittBusy(d, dep, v, M, it, tid, sec, except) {
+      const act = ittActive(d, dep), sl = new Set(M[sec].slots);
+      for (const [o, x] of Object.entries(M)) { if (o === sec || o === except) continue; if (ittOwner(it, M, o, act) === tid && x.slots.some(s => sl.has(s))) return o; }
+      const c = v.entries.find(e => e.teacherId === tid && e.type !== 'teach' && sl.has(e.day + '|' + e.period));
+      return c ? (Engine.SLOT_TYPES[c.type] || 'التزام') : null;
+    }
+    // تركيب جدول داخلي من إصدار إدارة: التعيين يُطبَّق ما لم يتعارض مع خانة أخرى للمعلم نفسه (يبقى عندها معلم الإدارة ويُنبَّه)
+    function ittCompose(d, dep, v) {
+      const it = ittOf(dep), act = ittActive(d, dep), clash = [];
+      const taken = new Set(v.entries.filter(e => !(e.type === 'teach' && e.cls && it.assign[String(e.cls).trim()] && act.has(it.assign[String(e.cls).trim()]))).map(e => e.teacherId + '|' + e.day + '|' + e.period));
+      const out = [];
+      for (const e of v.entries) {
+        const sec = e.type === 'teach' && e.cls ? String(e.cls).trim() : null, to = sec ? it.assign[sec] : null;
+        if (to && act.has(to) && to !== e.teacherId) {
+          const k = to + '|' + e.day + '|' + e.period;
+          if (taken.has(k)) { clash.push(sec); taken.add(e.teacherId + '|' + e.day + '|' + e.period); out.push({ ...e }); continue; }
+          taken.add(k); out.push({ ...e, teacherId: to });
+        } else out.push({ ...e });
+      }
+      const ids = Array.from(new Set(v.teacherIds.concat(Array.from(act)))).filter(id => d.teachers.some(t => t.id === id && t.deptId === dep.id));
+      return { entries: out, teacherIds: ids, clash: Array.from(new Set(clash)) };
+    }
+    const usedByDay = (d, dep, ver) => d.days.some(x => x.deptId === dep.id && x.scheduleVersion === ver);
+    /* بناء إصدارات «الجدول الداخلي» لإصدار الإدارة الساري اليوم ولكل إصدار إدارة قادم. إصدار داخلي من اليوم نفسه على الأساس نفسه
+       ولم يُوزَّع به يوم يُحدَّث في مكانه (لا تكثر الإصدارات مع كل نقل). */
+    function ittMaterialize(d, dep, ctx) {
+      const today = kuwaitToday(now());
+      const inForce = metaAt(dep, today, 'admin');
+      const targets = timelineOf(dep).filter(x => !x.cancelled && isAdminKind(x.kind) && (effOf(x) > today || (inForce && x.version === inForce.version)));
+      const made = [];
+      for (const t of targets) {
+        const av = verObj(dep, t.version); if (!av) continue;
+        const eff = effOf(t) > today ? t.effectiveFrom : today;
+        const c = ittCompose(d, dep, av);
+        const tl = timelineOf(dep);
+        const same = (dep.scheduleVersions || []).filter(v => v.source && v.source.kind === ITT_KIND && v.source.baseVersion === av.version && v.effectiveFrom === eff).sort((p, q) => q.version - p.version)[0];
+        const newest = Math.max(0, ...tl.map(x => x.version));
+        if (same && same.version === newest && !usedByDay(d, dep, same.version)) {
+          Object.assign(same, { entries: c.entries, teacherIds: c.teacherIds, approvedAt: iso(), approvedBy: ctx ? ctx.name : 'النظام' });
+          made.push(same.version); continue;
+        }
+        if (same && !usedByDay(d, dep, same.version) && JSON.stringify(same.entries) === JSON.stringify(c.entries) && JSON.stringify(same.teacherIds) === JSON.stringify(c.teacherIds)) { made.push(same.version); continue; }
+        const v = { version: newest + 1, approvedAt: iso(), approvedBy: ctx ? ctx.name : 'النظام', days: av.days.slice(), periodsByDay: structuredClone(av.periodsByDay), teacherIds: c.teacherIds, entries: c.entries,
+          source: { kind: ITT_KIND, baseVersion: av.version, note: `الجدول الداخلي فوق إصدار الإدارة ${av.version}` }, effectiveFrom: eff };
+        addScheduleVersion(dep, v); made.push(v.version);
+      }
+      return made;
+    }
+    // تقرير «ما تغيّر في الجدول الداخلي» عند وصول إصدار إدارة جديد
+    function ittAfterAdmin(d, dep, nv, ctx) {
+      const it = dep.itt; if (!it) return;
+      const ov = it.base ? verObj(dep, it.base) : null;
+      const Mo = ov ? secsOf(ov) : {}, Mn = secsOf(nv), items = [], conf = [];
+      const nm = id => nameIn(d, id), dayTxt = sl => sl.map(s => { const [k, p] = s.split('|'); return Engine.DAY_NAMES[k] + ' ' + p; }).join('، ');
+      for (const sec of Object.keys(Mn)) {
+        const o = Mo[sec], n = Mn[sec], mine = it.assign[sec];
+        if (!o) { items.push({ c: 'a', t: `${sec}: شعبة جديدة في جدول الإدارة عند ${nm(n.t)}.` }); continue; }
+        if (o.slots.join() !== n.slots.join()) items.push({ c: 't', t: `${sec}: تغيّر الوقت ${dayTxt(o.slots)} ← ${dayTxt(n.slots)}${mine ? ` — وتبقى عند ${nm(mine)} كما وزّعتها` : ''}.` });
+        if (o.t !== n.t) {
+          if (mine && mine !== n.t) conf.push({ sec, mine, admin: n.t, was: o.t });
+          else items.push({ c: 'a', t: `${sec}: غيّرت الإدارة المعلم ${nm(o.t)} ← ${nm(n.t)}${mine === n.t ? ' (وهو نفسه اختيارك)' : ''}.` });
+        }
+      }
+      for (const sec of Object.keys(Mo)) if (!Mn[sec]) items.push({ c: 'a', t: `${sec}: حُذفت من جدول الإدارة.` });
+      for (const sec of Object.keys(it.assign)) if (!Mn[sec] || Mn[sec].t === it.assign[sec]) delete it.assign[sec];
+      it.base = nv.version;
+      it.report = { at: iso(), from: ov ? ov.version : null, to: nv.version, items, conf: conf.map(c => ({ ...c, mineName: nm(c.mine), adminName: nm(c.admin), wasName: nm(c.was) })) };
+      ittMaterialize(d, dep, ctx);
+    }
+    function ittLog(d, dep, ctx, text) { const it = ittOf(dep); it.log = [{ at: iso(), by: ctx ? ctx.name : 'النظام', text }].concat(it.log).slice(0, 200); audit(d, ctx, 'الجدول الداخلي', text, dep.id); }
+    // صلاحية التعديل: رئيس القسم الأصلي لقسمه، ومدير النظام والإدارة (scope يتحقق من القسم)
+    function ittDep(d, ctx, a, edit) {
+      const dep = deptIn(d, scope(ctx, a.deptId));
+      if (edit && ctx.role === 'head' && !(ctx.kind === 'head' && ctx.deptId === dep.id && !ctx.viaGrant)) fail('تعديل الجدول الداخلي لرئيس القسم في قسمه، أو مدير النظام والإدارة.', 'forbidden');
+      return dep;
+    }
+    function ittView(d, dep, ctx) {
+      const it = ittOf(dep), v = adminLatestV(dep), today = kuwaitToday(now());
+      const ts = teachersOf(d, dep.id).filter(t => t.status === 'active').sort((p, q) => (p.rotationOrder ?? 1e9) - (q.rotationOrder ?? 1e9));
+      const M = v ? secsOf(v) : {}, act = ittActive(d, dep);
+      const comp = v ? ittCompose(d, dep, v) : { clash: [] };
+      return {
+        rev: it.rev || 0, ready: !!v, baseVersion: v ? v.version : null, baseFrom: v ? v.effectiveFrom || null : null,
+        days: v ? v.days : [], periodsByDay: v ? v.periodsByDay : {},
+        teachers: ts.map(t => ({ id: t.id, name: t.name, head: dep.headTeacherId === t.id, trainee: !!t.trainee, inRotation: !!t.inRotation })),
+        sections: Object.entries(M).map(([sec, x]) => ({ sec, slots: x.slots, admin: x.t, owner: ittOwner(it, M, sec, act), manual: !!(it.assign[sec] && act.has(it.assign[sec]) && it.assign[sec] !== x.t) })),
+        commits: v ? v.entries.filter(e => e.type !== 'teach').map(e => ({ t: e.teacherId, s: e.day + '|' + e.period, type: e.type, name: Engine.SLOT_TYPES[e.type] || 'التزام' })) : [],
+        clash: comp.clash, report: it.report || null, log: (it.log || []).slice(0, 30), canUndo: (it.hist || []).length > 0,
+        source: srcNow(dep, today).source, canEdit: !ctx || ctx.role !== 'head' || (ctx.kind === 'head' && ctx.deptId === dep.id && !ctx.viaGrant)
+      };
+    }
+    op('itt.get', ['admin', 'head'], async (ctx, a) => ittView(db, ittDep(db, ctx, a, false), ctx));
+    function ittEdit(name, fn) {
+      op(name, ['admin', 'head'], async (ctx, a) => tx(d => {
+        const dep = ittDep(d, ctx, a, true); const it = ittOf(dep);
+        if (a.rev != null && a.rev !== (it.rev || 0)) fail('تغيّر الجدول الداخلي من حساب آخر. حدّث الصفحة ثم أعد المحاولة.', 'conflict');
+        const v = adminLatestV(dep); if (!v) fail('لا يوجد جدول إدارة معتمد لهذا القسم بعد؛ الجدول الداخلي يُبنى فوقه.', 'not_ready');
+        if (it.base == null) it.base = v.version;
+        const snap = JSON.stringify(it.assign);
+        const msg = fn(d, dep, it, v, secsOf(v), a, ctx);
+        if (JSON.stringify(it.assign) === snap) return { view: ittView(d, dep, ctx), msg: msg || null, changed: false };
+        if (name !== 'itt.undo') it.hist = [snap].concat(it.hist || []).slice(0, 40);
+        it.rev = (it.rev || 0) + 1;
+        ittMaterialize(d, dep, ctx);
+        if (srcNow(dep, kuwaitToday(now())).source === 'internal') bump(dep);
+        if (msg) ittLog(d, dep, ctx, msg);
+        return { view: ittView(d, dep, ctx), msg: msg || null, changed: true };
+      }));
+    }
+    const ittSet = (it, M, sec, to) => { if (M[sec].t === to) delete it.assign[sec]; else it.assign[sec] = to; };
+    const ittTeacher = (d, dep, id) => { const t = d.teachers.find(x => x.id === id && x.deptId === dep.id && x.status === 'active'); if (!t) fail('المعلم ليس من معلمي القسم الفعّالين.', 'forbidden'); return t; };
+    ittEdit('itt.move', (d, dep, it, v, M, a) => {
+      const sec = String(a.sec || ''); if (!M[sec]) fail('الشعبة غير موجودة في جدول الإدارة.');
+      const to = ittTeacher(d, dep, a.to), act = ittActive(d, dep), from = ittOwner(it, M, sec, act);
+      if (from === to.id) return null;
+      const b = ittBusy(d, dep, v, M, it, to.id, sec);
+      if (b) fail(`لا يمكن: ${to.name} عنده ${b} في الوقت نفسه.`, 'conflict');
+      ittSet(it, M, sec, to.id);
+      return `${sec}: من ${nameIn(d, from)} إلى ${to.name}`;
+    });
+    ittEdit('itt.swap', (d, dep, it, v, M, a) => {
+      const s1 = String(a.a || ''), s2 = String(a.b || ''); if (!M[s1] || !M[s2]) fail('الشعبة غير موجودة في جدول الإدارة.');
+      const act = ittActive(d, dep), t1 = ittOwner(it, M, s1, act), t2 = ittOwner(it, M, s2, act);
+      if (t1 === t2) return null;
+      const x = ittBusy(d, dep, v, M, it, t2, s1, s2), y = ittBusy(d, dep, v, M, it, t1, s2, s1);
+      if (x || y) fail(`لا يمكن التبديل: تعارض في الوقت (${x ? nameIn(d, t2) + ' عنده ' + x : nameIn(d, t1) + ' عنده ' + y}).`, 'conflict');
+      ittSet(it, M, s1, t2); ittSet(it, M, s2, t1);
+      return `تبديل ${s1} ↔ ${s2}`;
+    });
+    ittEdit('itt.reset', (d, dep, it) => { if (!Object.keys(it.assign).length) return null; it.assign = {}; return 'إعادة التوزيع كما في جدول الإدارة'; });
+    ittEdit('itt.undo', (d, dep, it) => { const h = it.hist || []; if (!h.length) fail('لا يوجد ما يُتراجع عنه.'); it.assign = JSON.parse(h[0]); it.hist = h.slice(1); return 'تراجع عن آخر تعديل'; });
+    ittEdit('itt.decide', (d, dep, it, v, M, a) => {
+      const r = it.report; const i = r ? (r.conf || []).findIndex(c => c.sec === a.sec) : -1; if (i < 0) fail('القرار غير موجود أو اتُّخذ مسبقًا.');
+      const c = r.conf[i]; r.conf.splice(i, 1);
+      if (a.keep) return null;
+      delete it.assign[c.sec]; return `${c.sec}: اعتماد تغيير الإدارة (${nameIn(d, c.admin)})`;
+    });
+    op('itt.reportClear', ['admin', 'head'], async (ctx, a) => tx(d => { const dep = ittDep(d, ctx, a, true); const it = ittOf(dep); if (it.report) it.report = { ...it.report, items: [], cleared: true }; return { view: ittView(d, dep, ctx) }; }));
+    // المتدربون يدخلون الدور مع «الجدول الداخلي» ويخرجون منه مع «الإدارة» (لا يوقفون التوزيع بلا سطر في جدول الإدارة)
+    function ittTraineeRotation(d, dep, internal) {
+      const st = dep.state || {};
+      for (const t of teachersOf(d, dep.id).filter(x => x.trainee && x.status === 'active')) {
+        if (internal && !t.inRotation) t.inRotation = true;
+        if (!internal && t.inRotation) {
+          if (st.pointer === t.id) { const ring = Engine.buildRing(teachersOf(d, dep.id), dep.headTeacherId); const i = ring.indexOf(t.id); st.pointer = ring.length > 1 ? ring[(i - 1 + ring.length) % ring.length] : null; }
+          if (st.manualNext === t.id) st.manualNext = null;
+          t.inRotation = false;
+        }
+      }
     }
     /* حفظ مصدر جدول القسم بتاريخ سريان (اليوم أو لاحقًا): رئيس القسم ونوابه لقسمهم، وإدارة المدرسة والمنظّم، والمفوَّض بـ«إدارة جدول القسم».
        يتحقق من وجود جدول صالح للمصدر الجديد في تاريخ السريان، ولا يحذف أي إصدار ولا يغيّر الدين أو الدور أو إعدادات الاحتياط أو الأيام المعتمدة.
@@ -5561,6 +5764,7 @@
       const from = a.from == null || a.from === '' ? today : String(a.from);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || Number.isNaN(new Date(from + 'T12:00:00Z').getTime())) fail('تاريخ بدء السريان غير صالح.');
       if (from < today) fail('تاريخ بدء السريان لا يكون قبل اليوم؛ الأيام السابقة تبقى على مصدرها، وتصحيحها من «تعديل غياب اليوم».');
+      if (src === 'internal') { const it = ittOf(dep); const lv = adminLatestV(dep); if (lv && it.base == null) it.base = lv.version; ittMaterialize(d, dep, ctx); }
       if (!metaAt(dep, from, src)) fail(srcMissing(dep, from, src) + ' يبقى المصدر الحالي فعّالًا.', 'not_ready');
       const before = srcNow(dep, from);
       const pendingBefore = (dep.schedSource || []).filter(e => e.from > today);
@@ -5572,6 +5776,7 @@
       const nowSrc = srcNow(dep, today).source;
       if (!(dep.schedSource || []).length && nowSrc && from > today) keep.push({ source: nowSrc, from: today, at: entry.at, by: ctx.name, byRole: entry.byRole, prev: null, implicit: true });
       dep.schedSource = keep.concat([entry]).sort((p, q) => (p.from < q.from ? -1 : p.from > q.from ? 1 : 0));
+      if (from === today) ittTraineeRotation(d, dep, src === 'internal');
       bump(dep);
       const nm = x => (x ? SRC_NAME[x] : 'غير محدد');
       const m = metaAt(dep, from, src);
@@ -7896,7 +8101,7 @@
     // ================= جدول المدرسة =================
     const TT = TTOps.install({
       op, tx, fail, audit, iso, uid, cleanName, deptIn, schoolIn, deptsOfSchool, teachersOf, bump, Engine, validateSchedulePayload, newDept, kuwaitToday, now,
-      db: () => db, schedAt, addScheduleVersion, scope, srcNow
+      db: () => db, schedAt, addScheduleVersion, scope, srcNow, ittAfterAdmin: (d, dep, v, ctx) => ittAfterAdmin(d, dep, v, ctx)
     });
     // ================= جدولي وطلبات تبديل الحصص المؤقتة =================
     const SW = SwapOps.install({ op, tx, fail, audit, iso, uid, deptIn, schoolIn, deptsOfSchool, teachersOf, Engine, kuwaitToday, now, schedAt, liveGrants, db: () => db, lessonStart: (sc, date, p) => BL.lessonStart(sc, date, p), bellDay: (sc, date, tid) => BL.dayInfo(sc, date, tid) });
@@ -8633,9 +8838,9 @@
         const dep = a.deptId ? deptIn(db, a.deptId) : null;
         const schoolId = SCHOOL_KINDS.includes(a.kind) ? a.schoolId : dep ? dep.schoolId : null;
         if (!schoolId || !sids.has(schoolId)) continue;
-        if (!accountCtx(a.id)) { const k = schoolId + '|' + (SCHOOL_KINDS.includes(a.kind) ? 'school' : a.deptId); inactive[k] = (inactive[k] || 0) + 1; continue; }
+        if (!accountCtx(a.id, true)) { const k = schoolId + '|' + (SCHOOL_KINDS.includes(a.kind) ? 'school' : a.deptId); inactive[k] = (inactive[k] || 0) + 1; continue; }
         const row = { id: a.id, name: a.name, kind: a.kind === 'deputy' ? 'deputy' : a.kind, schoolId, deptId: SCHOOL_KINDS.includes(a.kind) ? null : a.deptId, deptName: dep ? dep.name : '' };
-        if (a.kind === 'teacher') { const t = db.teachers.find(x => x.id === a.teacherId); row.teacherName = t ? t.name : a.name; }
+        if (a.kind === 'teacher') { const t = db.teachers.find(x => x.id === a.teacherId); row.teacherName = t ? t.name : a.name; row.trainee = !!(t && t.trainee); row.pending = a.status === 'pending'; }
         if (!SCHOOL_KINDS.includes(a.kind) && a.kind !== 'teacher') {
           row.grants = (db.delegations || []).filter(g => g.granteeId === a.id && delegationState(db, g, today) === 'active').map(g => ({
             schoolId: g.schoolId, perms: g.perms.filter(k => PERM_KEYS.includes(k)).map(k => PERMS.find(x => x.key === k).label),
@@ -8661,7 +8866,7 @@
       if (name.startsWith('auth.') || name.startsWith('preview.')) throw new ApiError('هذه العملية لا تُنفَّذ داخل المعاينة.', 'forbidden');
       if (PREVIEW_BLOCK[name]) throw new ApiError(`${PREVIEW_BLOCK[name]} غير متاح في وضع المعاينة.`, 'preview');
       const id = meta.as && typeof meta.as.accountId === 'string' ? meta.as.accountId : '';
-      if (!accountCtx(id)) throw new ApiError('الحساب المختار للمعاينة غير موجود أو غير فعّال. اختر حسابًا آخر.', 'preview_target');
+      if (!accountCtx(id, true)) throw new ApiError('الحساب المختار للمعاينة غير موجود أو غير فعّال. اختر حسابًا آخر.', 'preview_target');
       // نسخة مؤقتة معزولة: الكتابة فيها لا تصل إلى مصدر الحفظ الفعلي
       const raw = JSON.stringify(db); let wrote = false;
       const box = createServer({ ...opts, latency: 0, storage: { load: () => raw, save: () => { wrote = true; } } });
@@ -8682,7 +8887,7 @@
     async function _runAs(accountId, name, args, meta) {
       sync();
       const o = ops[name]; if (!o) throw new ApiError('عملية غير معروفة.', 'not_found');
-      const ctx = accountCtx(accountId); if (ctx) ctx.preview = true;
+      const ctx = accountCtx(accountId, true); if (ctx) ctx.preview = true;
       return run(o, name, ctx, null, args, meta);
     }
     async function run(o, name, resolved, tokenHash, args, meta) {
@@ -8724,13 +8929,15 @@
     async function previewTargetOf(token, as) {
       const real = await sessionOf(token);
       if (!real || real.role !== 'admin' || !as || typeof as.accountId !== 'string') return null;
-      return accountCtx(as.accountId);
+      return accountCtx(as.accountId, true);
     }
     /* للخلفية الفعلية بعد حفظ عملية: الإشعارات الناتجة عن الفرق بين البيانات قبلها وبعدها (لا شيء في المعاينة) */
     function notifyDerive(beforeRaw, actor) { return NT ? NT.derive(JSON.parse(beforeRaw), db, actor) : []; }
     async function notifyAttAuto(from, to) { return attAutoRun(from, to); }
     function notifyReminders(from, to) { return NT && NT.anyReminder(db) ? NT.reminders(db, from, to) : []; }
-    return { call, ApiError, sessionOf, previewTargetOf, _runAs, _peek: () => db, notifyDerive, notifyReminders, notifyAttAuto };
+    // للاختبارات المحلية فقط (غير متاح في الإنتاج): محاكاة وصول إصدار إدارة جديد لقسم
+    const _ittAdmin = production ? undefined : async (deptId, mutate) => tx(d => { const dep = deptIn(d, deptId); const cur = Math.max(0, ...(dep.scheduleVersions || []).map(v => v.version)); const base = adminLatestV(dep); const v = { ...structuredClone(base), version: cur + 1, approvedAt: iso(), effectiveFrom: kuwaitToday(now()) }; mutate(v); addScheduleVersion(dep, v); ittAfterAdmin(d, dep, v, null); bump(dep); return v.version; });
+    return { call, ApiError, sessionOf, previewTargetOf, _runAs, _peek: () => db, notifyDerive, notifyReminders, notifyAttAuto, _ittAdmin };
   }
 
   const Server = { createServer, ApiError, kuwaitToday };
@@ -9895,7 +10102,7 @@
   // إن أرادت عملية من هذه القائمة الحفظ لأي سبب، تُلغى محاولتها كاملة وتُعاد بقفل حصري — فلا تُكتب بيانات تحت قفل القراءة.
   const READ_OPS = new Set(['me.get', 'admin.dashboard', 'dept.list', 'dept.get', 'teacher.list', 'notify.dayPlan', 'schedule.get', 'importProfile.get',
     'state.get', 'day.get', 'day.preview', 'days.list', 'day.correctInfo', 'day.correctPreview', 'report.build', 'account.list', 'deputy.list', 'audit.list',
-    'school.list', 'school.dashboard', 'school.adminSlots', 'school.report', 'schoolImport.context', 'delegation.list', 'timetable.get', 'timetable.activatePreview', 'timetable.importContext', 'teacher.myView', 'teacherAccounts.context', 'adminDist.list', 'adminDist.options', 'adminDist.autoPlan', 'notice.list', 'preview.options', 'timetable.deptStatus', 'my.schedule', 'my.deptSchedule', 'swap.options', 'swap.preview', 'swap.list', 'bell.get', 'bell.today', 'widget.bell', 'duty.list', 'auth.clock', 'sup.get', 'sup.rotPreview', 'taImport.context', 'taImport.preview', 'home.data']);
+    'school.list', 'school.dashboard', 'school.adminSlots', 'school.report', 'schoolImport.context', 'delegation.list', 'timetable.get', 'timetable.activatePreview', 'timetable.importContext', 'teacher.myView', 'teacherAccounts.context', 'adminDist.list', 'adminDist.options', 'adminDist.autoPlan', 'notice.list', 'preview.options', 'timetable.deptStatus', 'my.schedule', 'my.deptSchedule', 'swap.options', 'swap.preview', 'swap.list', 'bell.get', 'bell.today', 'widget.bell', 'duty.list', 'auth.clock', 'sup.get', 'sup.rotPreview', 'taImport.context', 'taImport.preview', 'home.data', 'itt.get']);
   const NEEDS_WRITE = Symbol('needsWrite');
 
   async function attempt(sql, req, cfg, mode) {
