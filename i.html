@@ -1149,10 +1149,15 @@ nav.crumb { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-
 .itt-slot.no { border-color: var(--bad); color: var(--bad); background: none; cursor: not-allowed; font-size: .75rem; max-width: 170px; }
 .itt-slot.over { background: color-mix(in srgb, var(--navy) 22%, transparent); }
 .itt-ghost { position: fixed; pointer-events: none; z-index: 60; transform: translate(50%, -50%) scale(1.08); box-shadow: 0 8px 24px rgba(0,0,0,.25); }
-.itt-wk-w { overflow-x: auto; }
-.itt-wk { min-width: 900px; font-size: .78rem; }
-.itt-wk th, .itt-wk td { border: 1px solid var(--line); padding: 3px 2px; text-align: center; min-width: 32px; }
-.itt-wk th.n { text-align: start; padding: 4px 8px; min-width: 150px; position: sticky; inset-inline-start: 0; background: var(--surface); z-index: 1; }
+.itt-wk { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: clamp(.62rem, 2.6vw, .78rem); margin-bottom: 10px; }
+.itt-wk th, .itt-wk td { border: 1px solid var(--line); padding: 3px 1px; text-align: center; overflow: hidden; }
+.itt-wk th.n { text-align: start; padding: 4px 6px; white-space: nowrap; text-overflow: ellipsis; }
+.itt .tabs { flex-wrap: wrap; overflow: visible; }
+.itt .tabs button { flex: 1 1 auto; white-space: nowrap; padding-inline: 6px; }
+@media (max-width: 480px) { .itt .tabs { gap: 0; } .itt .tabs button { font-size: .8rem; padding-inline: 3px; } }
+.itt-wk th.dh { background: var(--surface-2, var(--line)); font-weight: 800; }
+.itt-wk .pill { font-size: .62rem; padding: 0 4px; }
+.itt-cm { display: block; font-size: .6rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .itt-wk .ds { border-inline-start: 3px solid var(--ink); }
 .itt-wk td.cm { background: repeating-linear-gradient(45deg, var(--line) 0 4px, transparent 4px 8px); color: var(--muted); }
 .itt-wk td.clash { outline: 2px solid var(--bad); outline-offset: -2px; }
@@ -6395,18 +6400,29 @@ ${buildLogReport(rep)}
           <div><button class="btn primary" type="submit" data-busy="جارٍ الإضافة…">إضافة وإنشاء حسابه</button></div></form>
         <span class="help small muted">يصير معلمًا في القسم بحساب «معلم» (رمز تفعيل يظهر مرة واحدة)، يرى «جدولي» فقط. أعطه شعبًا من هنا؛ ومع «الجدول الداخلي» يدخل الاحتياط والدور والدين بحصصه. لإزالته: «أرشفة» من «المعلمون».</span></details>` : ''}`;
   }
+  // الجدول الأسبوعي يتسع لعرض الشاشة دائمًا (بلا سحب أفقي): جدول واحد للأسبوع إن اتسعت الشاشة (كمبيوتر، آيباد أفقي)، وإلا جدول لكل يوم تحت بعض (آيفون، آيباد عمودي)
+  function ittWeekMode(x) {
+    const host = $('#itt-host'); const w = host ? host.clientWidth : window.innerWidth;
+    const n = x.days.reduce((a, d) => a + (x.periodsByDay[d] || []).length, 0);
+    return (w - Math.min(150, w * 0.18)) / Math.max(1, n) >= 27 ? 'wide' : 'days';
+  }
   function ittWeekHtml(x) {
-    const days = x.days, P = d => (x.periodsByDay[d] || []);
-    const head = `<tr><th class="n" rowspan="2">المعلم</th>${days.map(d => `<th colspan="${P(d).length}" class="dh">${ITT_DAYS[d]}</th>`).join('')}</tr><tr>${days.map(d => P(d).map((p, i) => `<th class="${i === 0 ? 'ds' : ''}">${p}</th>`).join('')).join('')}</tr>`;
+    const days = x.days, P = d => (x.periodsByDay[d] || []), mode = S.v.ittWkMode = ittWeekMode(x);
     const clash = new Set(x.clash || []);
-    const body = x.teachers.map(t => {
+    const rows = x.teachers.map(t => {
       const at = {}; for (const s of ittOwned(x, t.id)) for (const sl of s.slots) (at[sl] = at[sl] || []).push(s.sec);
       const cm = {}; for (const c of x.commits) if (c.t === t.id) cm[c.s] = c.name;
-      return `<tr><th class="n">${esc(ittShort(t.name))}${t.trainee ? ' <span class="pill warn plain">متدرب</span>' : ''}</th>${days.map(d => P(d).map((p, i) => { const k = d + '|' + p, a = at[k] || [];
-        return `<td class="${i === 0 ? 'ds' : ''}${a.length > 1 || a.some(s => clash.has(s)) ? ' clash' : ''}${!a.length && cm[k] ? ' cm' : ''}">${a.map(s => `<span class="itt-c ${ittGrade(s)}">${esc(s)}</span>`).join('') || (cm[k] ? `<span class="small">${esc(cm[k])}</span>` : '')}</td>`; }).join('')).join('')}</tr>`;
-    }).join('');
-    return `<div class="help small muted">الأوقات من جدول الإدارة (الإصدار ${x.baseVersion})، والمعلم من الجدول الداخلي. الخانات الرمادية التزامات من جدول الإدارة (مثل اجتماع القسم).</div>
-      <div class="tbl-wrap itt-wk-w"><table class="tbl itt-wk"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+      return { t, at, cm };
+    });
+    const cell = (r, d, p, i) => { const k = d + '|' + p, a = r.at[k] || [];
+      return `<td class="${i === 0 ? 'ds' : ''}${a.length > 1 || a.some(s => clash.has(s)) ? ' clash' : ''}${!a.length && r.cm[k] ? ' cm' : ''}"${!a.length && r.cm[k] ? ` title="${esc(r.cm[k])}"` : ''}>${a.map(s => `<span class="itt-c ${ittGrade(s)}">${esc(s)}</span>`).join('') || (r.cm[k] ? `<span class="itt-cm">${esc(r.cm[k])}</span>` : '')}</td>`; };
+    const nameTh = r => `<th class="n">${esc(hwShort(r.t.name))}${r.t.trainee ? ' <span class="pill warn plain">متدرب</span>' : ''}</th>`;
+    const help = `<div class="help small muted">الأوقات من جدول الإدارة (الإصدار ${x.baseVersion})، والمعلم من الجدول الداخلي. الخانات المخططة التزامات من جدول الإدارة (مثل اجتماع القسم).</div>`;
+    if (mode === 'wide') {
+      const head = `<tr><th class="n" rowspan="2">المعلم</th>${days.map(d => `<th colspan="${P(d).length}" class="dh ds">${ITT_DAYS[d]}</th>`).join('')}</tr><tr>${days.map(d => P(d).map((p, i) => `<th class="${i === 0 ? 'ds' : ''}">${p}</th>`).join('')).join('')}</tr>`;
+      return `${help}<table class="tbl itt-wk wide"><colgroup><col style="width:${Math.max(100, Math.min(150, Math.round(($('#itt-host') || document.body).clientWidth * 0.11)))}px"></colgroup><thead>${head}</thead><tbody>${rows.map(r => `<tr>${nameTh(r)}${days.map(d => P(d).map((p, i) => cell(r, d, p, i)).join('')).join('')}</tr>`).join('')}</tbody></table>`;
+    }
+    return help + days.map(d => `<table class="tbl itt-wk day"><colgroup><col style="width:34%"></colgroup><thead><tr><th class="n dh">${ITT_DAYS[d]}</th>${P(d).map(p => `<th>${p}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${nameTh(r)}${P(d).map(p => cell(r, d, p, 1)).join('')}</tr>`).join('')}</tbody></table>`).join('');
   }
   function ittUpdHtml(x) {
     const r = x.report;
@@ -6421,15 +6437,16 @@ ${buildLogReport(rep)}
   function ittPaint() {
     const host = $('#itt-host'), x = S.v.itt; if (!host || !x) return;
     if (!x.ready) { host.innerHTML = `<div class="panel">${missingCard('الجدول الداخلي يُبنى فوق جدول الإدارة.', ['لا يوجد جدول إدارة معتمد ومفعّل لهذا القسم بعد. يعتمده المسؤول من «جدول المدرسة» ويفعّله للاحتياط.'])}</div>`; return; }
-    const tab = S.v.ittTab || 'dist';
+    const tab = S.v.ittTab || 'week';
     const moved = x.sections.filter(s => s.manual).length, tr = x.teachers.filter(t => t.trainee).length;
     host.innerHTML = `<section class="panel itt" aria-label="الجدول الداخلي">
       <div class="panel-head"><h2>الجدول الداخلي — ${esc(S.v.ittDeptName || '')}</h2><span class="small muted">${x.teachers.length} معلمًا${tr ? ` (${tr} متدرب)` : ''} · ${moved} شعبة موزعة يدويًا · الأوقات من جدول الإدارة (الإصدار ${x.baseVersion})</span></div>
       ${x.source !== 'internal' ? '<div class="notice info small"><span>الاحتياط الآن يمشي على «الإدارة». هذا التوزيع محفوظ، ويُطبَّق على الاحتياط والدور والدين عند اختيار «الجدول الداخلي» مصدرًا وحفظه من الأعلى.</span></div>' : ''}
-      <div class="tabs" role="tablist">${[['dist', 'توزيع الشعب'], ['week', 'الجدول الأسبوعي'], ['upd', `تحديث جدول الإدارة${x.report && (x.report.conf || []).length ? ` (${x.report.conf.length})` : ''}`]].map(([k, l]) => `<button role="tab" aria-selected="${tab === k}" data-act="ittTab" data-t="${k}">${l}</button>`).join('')}</div>
-      <div class="itt-body">${tab === 'week' ? ittWeekHtml(x) : tab === 'upd' ? ittUpdHtml(x) : ittDistHtml(x)}</div></section>`;
+      <div class="tabs" role="tablist">${[['week', 'الجدول الأسبوعي'], ['upd', `تحديث الجدول${x.report && (x.report.conf || []).length ? ` (${x.report.conf.length})` : ''}`], ['dist', 'توزيع الشعب']].map(([k, l]) => `<button role="tab" aria-selected="${tab === k}" data-act="ittTab" data-t="${k}">${l}</button>`).join('')}</div>
+      <div class="itt-body">${tab === 'dist' ? ittDistHtml(x) : tab === 'upd' ? ittUpdHtml(x) : ittWeekHtml(x)}</div></section>`;
     S.v.ittFlash = null;
   }
+  window.addEventListener('resize', () => { const x = S.v && S.v.itt; if (x && x.ready && (S.v.ittTab || 'week') === 'week' && $('#itt-host') && ittWeekMode(x) !== S.v.ittWkMode) ittPaint(); });
   async function ittMount(dep) {
     S.v.ittDeptName = dep.name;
     S.v.itt = await api('itt.get', D());
@@ -6458,7 +6475,7 @@ ${buildLogReport(rep)}
     if (ittDrag.moved) { ittDrag.moved = false; return; }
     const slot = e.target.closest('.itt-slot[data-drop]'), chip = e.target.closest('.itt-chip[data-sec]');
     if (slot && S.v.ittSel) { e.preventDefault(); ittDo('itt.move', { sec: S.v.ittSel, to: slot.dataset.drop }); return; }
-    if (chip && (S.v.ittTab || 'dist') === 'dist') { e.preventDefault(); ITT_ACT.ittPick(chip.dataset.sec); }
+    if (chip && (S.v.ittTab || 'week') === 'dist') { e.preventDefault(); ITT_ACT.ittPick(chip.dataset.sec); }
   });
   document.addEventListener('keydown', e => {
     if (!e.target.closest || !e.target.closest('#itt-host')) return;
@@ -6468,7 +6485,7 @@ ${buildLogReport(rep)}
   // السحب بالضغط المطوّل (لمس وفأرة)
   const ittDrag = { t: null, sec: null, ghost: null, moved: false, x: 0, y: 0 };
   document.addEventListener('pointerdown', e => {
-    const c = e.target.closest && e.target.closest('#itt-host .itt-chip[data-sec]'); if (!c || !S.v.itt || !S.v.itt.canEdit || (S.v.ittTab || 'dist') !== 'dist') return;
+    const c = e.target.closest && e.target.closest('#itt-host .itt-chip[data-sec]'); if (!c || !S.v.itt || !S.v.itt.canEdit || (S.v.ittTab || 'week') !== 'dist') return;
     ittDrag.x = e.clientX; ittDrag.y = e.clientY; ittDrag.sec = c.dataset.sec;
     ittDrag.t = setTimeout(() => { S.v.ittSel = ittDrag.sec; ittPaint(); const src = document.querySelector(`#itt-host .itt-chip[data-sec="${CSS.escape(ittDrag.sec)}"]`); if (!src) return;
       const g = src.cloneNode(true); g.classList.add('itt-ghost'); g.style.left = ittDrag.x + 'px'; g.style.top = ittDrag.y + 'px'; document.body.appendChild(g); ittDrag.ghost = g; try { if (navigator.vibrate) navigator.vibrate(15); } catch (_) { } }, 350);
