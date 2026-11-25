@@ -5425,14 +5425,14 @@ ${buildLogReport(rep)}
         : wkCell('c' + first, wide ? 'ل' : esc(tname(e.type)), w + tname(e.type) + extra);
     };
     const stats = t => { let n = 0, f = 0, l = 0; for (const d of shown) { if (d.study === false) continue; const ps = per(d), last = ps[ps.length - 1]; for (const p of ps) { const e = d.get(t.id, p); if (e && e.type === 'teach') { n++; if (p === 1) f++; if (p === last) l++; } } } return [n, f, l]; };
-    const head1 = `<tr><th class="wk-h" rowspan="2">المعلم</th>${shown.map(d => `<th class="dhead dstart" colspan="${Math.max(1, per(d).length)}">${E.DAY_NAMES[d.dk]}${!wide && d.date ? ` <bdi>${ddmm(d.date)}</bdi>` : ''}</th>`).join('')}<th class="st dstart" rowspan="2" title="النصاب">#</th><th class="st" rowspan="2" title="الحصص الأولى">F</th><th class="st" rowspan="2" title="الحصص الأخيرة">L</th></tr>`;
+    const head1 = `<tr><th class="wk-h" rowspan="2">المعلم</th>${shown.map(d => `<th class="dhead dstart" colspan="${Math.max(1, per(d).length)}">${E.DAY_NAMES[d.dk]}${!wide && d.date ? ` <bdi>${ddmm(d.date)}</bdi>` : ''}</th>`).join('')}</tr>`;
     const head2 = `<tr>${shown.map(d => (per(d).length ? per(d) : [1]).map(p => `<th class="num${p === 1 ? ' dstart' : ''}">${p}</th>`).join('')).join('')}</tr>`;
-    const body = teachers.map(t => { const [n, f, l] = stats(t); return `<tr><th class="wk-h">${esc(t.name)}${t.tag ? ` <span class="cg-tag">${esc(t.tag)}</span>` : ''}</th>${shown.map(d => (per(d).length ? per(d) : [1]).map(p => cell(t, d, p)).join('')).join('')}<td class="st dstart">${n}</td><td class="st">${f}</td><td class="st">${l}</td></tr>`; }).join('');
+    const body = teachers.map(t => { return `<tr><th class="wk-h">${esc(t.name)}${t.tag ? ` <span class="cg-tag">${esc(t.tag)}</span>` : ''}</th>${shown.map(d => (per(d).length ? per(d) : [1]).map(p => cell(t, d, p)).join('')).join('')}</tr>`; }).join('');
     return `<div class="form-row dv-filters no-print">
         <div class="field"><label for="${o.k}-t">المعلم</label><select class="input" id="${o.k}-t" data-act="cgT" data-k="${o.k}"><option value="">جميع المعلمين</option>${o.teachers.map(t => `<option value="${t.id}"${t.id === V[kT] ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}</select></div>
         <div class="field"><label for="${o.k}-d">اليوم</label><select class="input" id="${o.k}-d" data-act="cgDay" data-k="${o.k}"><option value="">الأسبوع كامل</option>${o.days.map(d => `<option value="${d.dk}"${d.dk === V[kD] ? ' selected' : ''}>${E.DAY_NAMES[d.dk]}${d.date ? ' ' + ddmm(d.date) : ''}</option>`).join('')}</select></div>
       </div>
-      <div class="small muted">${teachers.length} معلم · #: النصاب · F: الحصص الأولى · L: الحصص الأخيرة${wide ? ' · ل: التزام' : ''} · <b class="wk-m sw">⇄</b> تبديل مؤقت · اضغط أي خانة لتفاصيلها</div>
+      <div class="small muted">${teachers.length} معلم${wide ? ' · ل: التزام' : ''} · <b class="wk-m sw">⇄</b> تبديل مؤقت · اضغط أي خانة لتفاصيلها</div>
       <div class="tbl-wrap my-week dv-all${wide ? ' dv-wk' : ' dv-1'}"><table class="tbl"><thead>${head1}${head2}</thead><tbody>${body}</tbody></table></div>${wkTipBox()}`;
   }
   // جدول أساسي (إصدار) → مدخلات المكوّن: أسماء المعلمين بترتيب الدور، ووسم الرئيس والمؤرشف
