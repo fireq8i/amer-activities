@@ -6400,29 +6400,15 @@ ${buildLogReport(rep)}
           <div><button class="btn primary" type="submit" data-busy="جارٍ الإضافة…">إضافة وإنشاء حسابه</button></div></form>
         <span class="help small muted">يصير معلمًا في القسم بحساب «معلم» (رمز تفعيل يظهر مرة واحدة)، يرى «جدولي» فقط. أعطه شعبًا من هنا؛ ومع «الجدول الداخلي» يدخل الاحتياط والدور والدين بحصصه. لإزالته: «أرشفة» من «المعلمون».</span></details>` : ''}`;
   }
-  // الجدول الأسبوعي يتسع لعرض الشاشة دائمًا (بلا سحب أفقي): جدول واحد للأسبوع إن اتسعت الشاشة (كمبيوتر، آيباد أفقي)، وإلا جدول لكل يوم تحت بعض (آيفون، آيباد عمودي)
-  function ittWeekMode(x) {
-    const host = $('#itt-host'); const w = host ? host.clientWidth : window.innerWidth;
-    const n = x.days.reduce((a, d) => a + (x.periodsByDay[d] || []).length, 0);
-    return (w - Math.min(150, w * 0.18)) / Math.max(1, n) >= 27 ? 'wide' : 'days';
-  }
+  // الجدول الأسبوعي: نفس جدول القسم المعتاد (الأسبوع كامل في جدول واحد يصغر مع الشاشة، مع فلتر المعلم واليوم)
   function ittWeekHtml(x) {
-    const days = x.days, P = d => (x.periodsByDay[d] || []), mode = S.v.ittWkMode = ittWeekMode(x);
-    const clash = new Set(x.clash || []);
-    const rows = x.teachers.map(t => {
-      const at = {}; for (const s of ittOwned(x, t.id)) for (const sl of s.slots) (at[sl] = at[sl] || []).push(s.sec);
-      const cm = {}; for (const c of x.commits) if (c.t === t.id) cm[c.s] = c.name;
-      return { t, at, cm };
-    });
-    const cell = (r, d, p, i) => { const k = d + '|' + p, a = r.at[k] || [];
-      return `<td class="${i === 0 ? 'ds' : ''}${a.length > 1 || a.some(s => clash.has(s)) ? ' clash' : ''}${!a.length && r.cm[k] ? ' cm' : ''}"${!a.length && r.cm[k] ? ` title="${esc(r.cm[k])}"` : ''}>${a.map(s => `<span class="itt-c ${ittGrade(s)}">${esc(s)}</span>`).join('') || (r.cm[k] ? `<span class="itt-cm">${esc(r.cm[k])}</span>` : '')}</td>`; };
-    const nameTh = r => `<th class="n">${esc(hwShort(r.t.name))}${r.t.trainee ? ' <span class="pill warn plain">متدرب</span>' : ''}</th>`;
-    const help = `<div class="help small muted">الأوقات من جدول الإدارة (الإصدار ${x.baseVersion})، والمعلم من الجدول الداخلي. الخانات المخططة التزامات من جدول الإدارة (مثل اجتماع القسم).</div>`;
-    if (mode === 'wide') {
-      const head = `<tr><th class="n" rowspan="2">المعلم</th>${days.map(d => `<th colspan="${P(d).length}" class="dh ds">${ITT_DAYS[d]}</th>`).join('')}</tr><tr>${days.map(d => P(d).map((p, i) => `<th class="${i === 0 ? 'ds' : ''}">${p}</th>`).join('')).join('')}</tr>`;
-      return `${help}<table class="tbl itt-wk wide"><colgroup><col style="width:${Math.max(100, Math.min(150, Math.round(($('#itt-host') || document.body).clientWidth * 0.11)))}px"></colgroup><thead>${head}</thead><tbody>${rows.map(r => `<tr>${nameTh(r)}${days.map(d => P(d).map((p, i) => cell(r, d, p, i)).join('')).join('')}</tr>`).join('')}</tbody></table>`;
-    }
-    return help + days.map(d => `<table class="tbl itt-wk day"><colgroup><col style="width:34%"></colgroup><thead><tr><th class="n dh">${ITT_DAYS[d]}</th>${P(d).map(p => `<th>${p}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${nameTh(r)}${P(d).map(p => cell(r, d, p, 1)).join('')}</tr>`).join('')}</tbody></table>`).join('');
+    const own = {}; for (const s of x.sections) if (s.owner) for (const sl of s.slots) (own[s.owner + '|' + sl] = own[s.owner + '|' + sl] || []).push(s.sec);
+    const cm = {}; for (const c of x.commits) cm[c.t + '|' + c.s] = c;
+    const teachers = x.teachers.map(t => ({ id: t.id, name: hwShort(t.name), tag: t.trainee ? 'متدرب' : t.head ? 'رئيس' : '' }));
+    const days = x.days.map(dk => ({ dk, periods: x.periodsByDay[dk] || [], get: (tid, p) => { const k = tid + '|' + dk + '|' + p, a = own[k];
+      if (a && a.length) return { type: 'teach', cls: a.join(' + ') }; const c = cm[k]; return c ? { type: c.type } : null; } }));
+    const cl = (x.clash || []).length ? `<div class="notice bad small"><b>تعارض في الأوقات:</b><span>${x.clash.map(esc).join('، ')} — التفاصيل في «تحديث الجدول».</span></div>` : '';
+    return `${cl}${combGrid({ k: 'itw', teachers, days })}<div class="help small muted">الأوقات من جدول الإدارة (الإصدار ${x.baseVersion})، والمعلم من الجدول الداخلي.</div>`;
   }
   function ittUpdHtml(x) {
     const r = x.report;
@@ -6446,7 +6432,6 @@ ${buildLogReport(rep)}
       <div class="itt-body">${tab === 'dist' ? ittDistHtml(x) : tab === 'upd' ? ittUpdHtml(x) : ittWeekHtml(x)}</div></section>`;
     S.v.ittFlash = null;
   }
-  window.addEventListener('resize', () => { const x = S.v && S.v.itt; if (x && x.ready && (S.v.ittTab || 'week') === 'week' && $('#itt-host') && ittWeekMode(x) !== S.v.ittWkMode) ittPaint(); });
   async function ittMount(dep) {
     S.v.ittDeptName = dep.name;
     S.v.itt = await api('itt.get', D());
@@ -10415,8 +10400,8 @@ ${buildLogReport(rep)}
     supTip: d => { S.v.supTip = S.v.supTip === d.k ? null : d.k; refresh(); },
     msWeek: d => { S.v.msDate = d.d || ''; refresh(); },
     dvDate: d => { S.v.dvDate = d.d || ''; refresh(); },
-    cgT: (d, el) => { S.v[d.k + 'T'] = el.value || ''; refresh(); },
-    cgDay: (d, el) => { S.v[d.k + 'Day'] = el.value || ''; refresh(); },
+    cgT: (d, el) => { S.v[d.k + 'T'] = el.value || ''; if (d.k === 'itw') ittPaint(); else refresh(); },
+    cgDay: (d, el) => { S.v[d.k + 'Day'] = el.value || ''; if (d.k === 'itw') ittPaint(); else refresh(); },
     dvPrint: () => { printNow(); },
     swSt: d => { S.v.swSt = d.k; refresh(); },
     swStart: async d => {
