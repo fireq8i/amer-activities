@@ -5089,14 +5089,17 @@ ${buildLogReport(rep)}
     { id: 'deptday', n: 'جدول القسم اليوم', d: 'صفوف كل معلم اليوم، ملوّنة حسب حضوره', r: 'admin school head', o: 'dept' },
     { id: 'debt', n: 'جدول الدين', d: 'الدين والحصص الزيادة لمعلمي القسم', r: 'admin school head', o: 'dept' }
   ];
-  const HOME_DEF = { admin: ['now', 'myatt', 'deptatt', 'dist', 'turn'], school: ['now', 'schoolatt', 'deptatt', 'dist'], head: ['now', 'myatt', 'deptatt', 'dist', 'debt'], teacher: ['now', 'myatt', 'myres', 'turn', 'myday'] };
+  // الترتيب الأصلي (ترتيب مدير النظام 2026-11-26) والمفعّل افتراضيًا لكل دور؛ ما لا يخص الدور يُحذف ويبقى الترتيب
+  const HOME_ORDER = ['myatt', 'now', 'deptatt', 'deptday', 'dist', 'turn', 'myres', 'myday', 'schoolatt', 'debt'];
+  const HOME_DEF = { admin: ['myatt', 'now', 'deptatt', 'deptday', 'dist', 'turn'], school: ['myatt', 'now', 'deptatt', 'deptday', 'dist', 'turn'], head: ['myatt', 'now', 'deptatt', 'deptday', 'dist', 'turn'], teacher: ['myatt', 'now', 'turn', 'myres', 'myday'] };
+  const homeDefLayout = () => { const cat = homeCat().map(w => w.id), order = HOME_ORDER.filter(id => cat.includes(id)).concat(cat.filter(id => !HOME_ORDER.includes(id))); return { order, on: order.filter(id => HOME_DEF[homeRole()].includes(id)), opts: { bellsize: 'full' } }; };
   const homeRole = () => (S.me.role === 'admin' ? 'admin' : isSchool() ? 'school' : isTeacher() ? 'teacher' : 'head');
   const homeLinked = () => (S.me.role === 'admin' ? !!S.me.adminTeacher : isTeacher() || linkedMe());
   const homeCat = () => { const r = homeRole(); return HOME_W.filter(w => w.r.split(' ').includes(r) && (!w.linked || homeLinked())); };
   function homeLayout() {
-    const cat = homeCat().map(w => w.id), def = HOME_DEF[homeRole()].filter(id => cat.includes(id));
+    const cat = homeCat().map(w => w.id);
     const h = S.me.prefs && S.me.prefs.home;
-    if (!h) return { order: def.concat(cat.filter(id => !def.includes(id))), on: def.slice(), opts: { bellsize: 'full' } };
+    if (!h) return homeDefLayout();
     const order = (h.order || []).filter(id => cat.includes(id));
     for (const id of cat) if (!order.includes(id)) order.push(id); // بطاقة جديدة لم تكن في الحفظ: تظهر في آخر القائمة مطفأة
     return { order, on: (h.on || []).filter(id => cat.includes(id)), opts: { bellsize: 'full', ...(h.opts || {}) } };
@@ -5217,7 +5220,7 @@ ${buildLogReport(rep)}
     homeMove: d => { const E0 = S.v.homeDraft; if (!E0) return; const i = Number(d.i), j = i + Number(d.d); if (j < 0 || j >= E0.order.length) return; const t = E0.order[i]; E0.order[i] = E0.order[j]; E0.order[j] = t; homeEdPaint(); const b = document.querySelector(`.hw-editor [data-act="homeMove"][data-i="${j}"][data-d="${d.d}"]`); if (b && !b.disabled) b.focus({ preventScroll: true }); },
     homeOpt: (d, el) => { const E0 = S.v.homeDraft; if (!E0) return; E0.opts[d.k] = el.value; homeEdPaint(); },
     homeUndo: () => { S.v.homeDraft = null; homeEdPaint(); },
-    homeDefault: () => { const r = homeRole(), cat = homeCat().map(w => w.id), def = HOME_DEF[r].filter(id => cat.includes(id)); S.v.homeDraft = { order: def.concat(cat.filter(id => !def.includes(id))), on: def.slice(), opts: { bellsize: 'full' } }; homeEdPaint(); },
+    homeDefault: () => { S.v.homeDraft = homeDefLayout(); homeEdPaint(); },
     homeSave: (d, el) => busy(el, async () => {
       const E0 = S.v.homeDraft; if (!E0) return;
       const r = await api('me.homeSave', { home: { order: E0.order, on: E0.on, opts: E0.opts } });
